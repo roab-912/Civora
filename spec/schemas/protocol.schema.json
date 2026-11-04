@@ -2355,7 +2355,8 @@
         "crypto_profile": {
           "enum": [
             "unconfigured",
-            "simulation_v0_2"
+            "simulation_v0_2",
+            "electionguard_v0_4"
           ]
         },
         "eligibility_suite": {
@@ -6171,6 +6172,504 @@
         "poll_id",
         "proposal_id",
         "question_digest"
+      ],
+      "additionalProperties": false
+    },
+    "eg_proof": {
+      "type": "object",
+      "properties": {
+        "challenge": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "response": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "required": [
+        "challenge",
+        "response"
+      ],
+      "additionalProperties": false
+    },
+    "eg_ciphertext": {
+      "type": "object",
+      "properties": {
+        "alpha": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{683}$"
+        },
+        "beta": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{683}$"
+        }
+      },
+      "required": [
+        "alpha",
+        "beta"
+      ],
+      "additionalProperties": false
+    },
+    "eg_context": {
+      "type": "object",
+      "properties": {
+        "encoding": {
+          "const": "eg-civic-compact-1"
+        },
+        "number_of_guardians": {
+          "const": "5"
+        },
+        "quorum": {
+          "const": "3"
+        },
+        "parameter_base_hash": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "manifest_hash": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "election_base_hash": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "extended_base_hash": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "joint_public_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{683}$"
+        }
+      },
+      "required": [
+        "encoding",
+        "number_of_guardians",
+        "quorum",
+        "parameter_base_hash",
+        "manifest_hash",
+        "election_base_hash",
+        "extended_base_hash",
+        "joint_public_key"
+      ],
+      "additionalProperties": false
+    },
+    "eg_guardian": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sequence_order": {
+          "enum": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"
+          ]
+        },
+        "coefficient_proofs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "public_key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{683}$"
+              },
+              "challenge": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              },
+              "response": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              }
+            },
+            "required": [
+              "public_key",
+              "challenge",
+              "response"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 3,
+          "minItems": 3
+        }
+      },
+      "required": [
+        "account_id",
+        "sequence_order",
+        "coefficient_proofs"
+      ],
+      "additionalProperties": false
+    },
+    "eg_ballot": {
+      "type": "object",
+      "properties": {
+        "encoding": {
+          "const": "eg-civic-compact-1"
+        },
+        "ballot_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ballot_style_id": {
+          "const": "civic"
+        },
+        "encrypting_device": {
+          "type": "string",
+          "pattern": "^civic:[0-9a-f]{64}$"
+        },
+        "timestamp": {
+          "const": "0"
+        },
+        "code_baux": {
+          "const": ""
+        },
+        "confirmation_code": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "election_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "state": {
+          "const": "CAST"
+        },
+        "contests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "contest_id": {
+                "const": "civic_question"
+              },
+              "sequence_order": {
+                "const": "0"
+              },
+              "votes_allowed": {
+                "const": "1"
+              },
+              "contest_hash": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              },
+              "selections": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "selection_id": {
+                      "const": "yes_bit"
+                    },
+                    "sequence_order": {
+                      "const": "0"
+                    },
+                    "encrypted_vote": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_ciphertext"
+                    },
+                    "proof": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_proof"
+                      },
+                      "maxItems": 2,
+                      "minItems": 2
+                    }
+                  },
+                  "required": [
+                    "selection_id",
+                    "sequence_order",
+                    "encrypted_vote",
+                    "proof"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 1,
+                "minItems": 1
+              },
+              "proof": {
+                "type": "array",
+                "items": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_proof"
+                },
+                "maxItems": 2,
+                "minItems": 2
+              },
+              "encrypted_contest_data": {
+                "type": "object",
+                "properties": {
+                  "c0": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{683}$"
+                  },
+                  "c1": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "maxLength": 2048
+                  },
+                  "c2": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{43}$"
+                  },
+                  "num_bytes": {
+                    "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                  }
+                },
+                "required": [
+                  "c0",
+                  "c1",
+                  "c2",
+                  "num_bytes"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "contest_id",
+              "sequence_order",
+              "votes_allowed",
+              "contest_hash",
+              "selections",
+              "proof",
+              "encrypted_contest_data"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "encoding",
+        "ballot_id",
+        "ballot_style_id",
+        "encrypting_device",
+        "timestamp",
+        "code_baux",
+        "confirmation_code",
+        "election_id",
+        "state",
+        "contests"
+      ],
+      "additionalProperties": false
+    },
+    "eg_tally": {
+      "type": "object",
+      "properties": {
+        "encoding": {
+          "const": "eg-civic-compact-1"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "election_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        },
+        "ciphertext": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_ciphertext"
+        },
+        "tally": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "b_over_m": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{683}$"
+        },
+        "proof": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_proof"
+        },
+        "shares": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "guardian_index": {
+                "enum": [
+                  "1",
+                  "2",
+                  "3",
+                  "4",
+                  "5"
+                ]
+              },
+              "share": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{683}$"
+              },
+              "a": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{683}$"
+              },
+              "b": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{683}$"
+              },
+              "response": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{43}$"
+              }
+            },
+            "required": [
+              "guardian_index",
+              "share",
+              "a",
+              "b",
+              "response"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "minItems": 3
+        }
+      },
+      "required": [
+        "encoding",
+        "id",
+        "election_id",
+        "ciphertext",
+        "tally",
+        "b_over_m",
+        "proof",
+        "shares"
+      ],
+      "additionalProperties": false
+    },
+    "eg_independence": {
+      "type": "object",
+      "properties": {
+        "commitment": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{683}$"
+        },
+        "response": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{43}$"
+        }
+      },
+      "required": [
+        "commitment",
+        "response"
+      ],
+      "additionalProperties": false
+    },
+    "scale_context": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "group_root": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "circuit_depth": {
+          "enum": [
+            "16",
+            "26"
+          ]
+        },
+        "partition_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "checkpoint_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "network_id",
+        "poll_id",
+        "protocol_epoch",
+        "group_root",
+        "circuit_depth",
+        "partition_count",
+        "checkpoint_id"
+      ],
+      "additionalProperties": false
+    },
+    "scale_envelope": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "lane_id": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "checkpoint_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "encrypted_ballot": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 174763
+        },
+        "independence": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_independence"
+        },
+        "membership": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/membership_v03"
+        }
+      },
+      "required": [
+        "network_id",
+        "poll_id",
+        "protocol_epoch",
+        "lane_id",
+        "checkpoint_id",
+        "encrypted_ballot",
+        "independence",
+        "membership"
+      ],
+      "additionalProperties": false
+    },
+    "eg_archive": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "const": "civic-audit-1"
+        },
+        "genesis": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/commit"
+          },
+          "maxItems": 8192
+        }
+      },
+      "required": [
+        "format",
+        "genesis",
+        "records"
       ],
       "additionalProperties": false
     }

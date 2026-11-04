@@ -1,6 +1,6 @@
-// Package electionguard checks Civic's transport envelope only. It deliberately
-// does not implement ports.VotingCrypto: parsing a bundle proves neither ballot
-// correctness nor a tally. See spec/decisions/0009-electionguard-interop.md.
+// Package electionguard implements Civic envelopes and public ElectionGuard 2.0
+// verification. Decoding an envelope alone proves neither ballot correctness nor
+// a tally. See spec/decisions/0010-electionguard-v0.4.md.
 package electionguard
 
 import (

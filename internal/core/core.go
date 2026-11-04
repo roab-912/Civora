@@ -3,6 +3,7 @@ package core
 import (
 	"civora/internal/codec"
 	"civora/internal/effects"
+	"civora/internal/electionguard"
 	"civora/internal/eligibility"
 	"civora/internal/governance"
 	"civora/internal/ports"
@@ -154,6 +155,40 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 		}
 	}
 	if c.Governance != nil {
+		if c.Governance.CryptoProfile == "electionguard_v0_4" {
+			implementation, artifacts, err := electionguard.PinnedModule()
+			if err != nil {
+				return nil, err
+			}
+			found := false
+			for _, module := range c.Registry.Modules {
+				if module.ID == electionguard.Suite {
+					found = true
+					if module.ImplementationSHA256 != implementation || !equalStrings(module.Artifacts, artifacts) {
+						return nil, fmt.Errorf("ERR_EG_MODULE_PIN")
+					}
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("ERR_EG_MODULE_PIN")
+			}
+			if c.Eligibility == nil || c.Governance.EligibilitySuite != c.Eligibility.SuiteID || c.Governance.BallotSuite != electionguard.Suite || c.Governance.TallySuite != electionguard.Suite {
+				return nil, fmt.Errorf("ERR_CRYPTO_PROFILE")
+			}
+			if err := c.Registry.Authorize(c.Registry.Epoch, "ballot.prove", electionguard.Suite, false); err != nil {
+				return nil, err
+			}
+			if err := c.Registry.Authorize(c.Registry.Epoch, "tally.prove", electionguard.Suite, false); err != nil {
+				return nil, err
+			}
+			if adapters.Voting != nil {
+				return nil, fmt.Errorf("ERR_PINNED_VOTING_ADAPTER")
+			}
+			n.adapters.Voting, err = electionguard.NewAdapter()
+			if err != nil {
+				return nil, err
+			}
+		}
 		if c.Governance.CryptoProfile == "simulation_v0_2" && adapters.Profile != "simulation_v0_2" {
 			return nil, fmt.Errorf("ERR_SIMULATION_DISABLED")
 		}
@@ -186,6 +221,18 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 		n.upgrades[a.PlanID] = UpgradeState{a.Plan, a.Instance, "armed"}
 	}
 	return n, nil
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 func (e *Engine) Snapshot() State {
 	height, tm := strconv.FormatUint(e.Height, 10), strconv.FormatUint(e.Time, 10)

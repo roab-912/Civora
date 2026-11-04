@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sort"
 )
 
 type GuardianAck struct {
@@ -41,7 +42,12 @@ type Tally struct {
 }
 
 func (s *State) context(x Execution, id string, poll *Poll) ports.PollContext {
-	return ports.PollContext{NetworkID: x.NetworkID, PollID: id, ProposalID: poll.ProposalID, Epoch: poll.ProtocolEpoch, EligibilitySuite: poll.EligibilitySuite, BallotSuite: poll.BallotSuite, TallySuite: poll.TallySuite, GroupRoot: poll.GroupRoot, Commitments: append([]string{}, poll.Commitments...), CeremonyDigest: val(poll.CeremonyDigest)}
+	guardians := []string{}
+	for _, g := range s.Proposals[poll.ProposalID].Guardians {
+		guardians = append(guardians, g.AccountID)
+	}
+	sort.Strings(guardians)
+	return ports.PollContext{NetworkID: x.NetworkID, PollID: id, ProposalID: poll.ProposalID, Epoch: poll.ProtocolEpoch, EligibilitySuite: poll.EligibilitySuite, BallotSuite: poll.BallotSuite, TallySuite: poll.TallySuite, GroupRoot: poll.GroupRoot, Commitments: append([]string{}, poll.Commitments...), CeremonyDigest: val(poll.CeremonyDigest), CeremonyBundle: val(poll.CeremonyBundle), GuardianIDs: guardians}
 }
 func (s *State) poll(id, phase string) (*Poll, *Proposal, error) {
 	poll, ok := s.Polls[id]
@@ -106,6 +112,7 @@ func (s *State) Configure(x Execution, raw []byte) error {
 	}
 	poll.CeremonyDigest = ptr(digestHex)
 	context := s.context(x, req.PollID, poll)
+	context.CeremonyBundle = req.CeremonyBundle
 	aggregate, e := x.Crypto.Configure(context, bundle)
 	if e != nil {
 		return e

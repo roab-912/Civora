@@ -70,6 +70,8 @@ export interface PollContext extends BulletinContext {
   groupRoot: string | null;
   commitments: string[];
   ceremonyDigest: string;
+  ceremonyBundle: string;
+  guardianIDs: string[];
 }
 export interface VotingCrypto {
   configure(context: PollContext, bundle: Uint8Array): string;

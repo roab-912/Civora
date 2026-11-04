@@ -117,6 +117,13 @@ func SDKHash(value string) (string, error) {
 	return new(big.Int).Rsh(new(big.Int).SetBytes(h.Sum(nil)), 8).String(), nil
 }
 func (v *Verifier) Verify(c Context, ballot []byte, p Membership) error {
+	scope, message := Binding(c.NetworkID, c.PollID, ballot)
+	return v.VerifyBound(c, p, scope, message)
+}
+
+// VerifyBound checks public inputs supplied by a separate, deterministic binding
+// implementation (e.g. scale_1). It does not authenticate that caller's context.
+func (v *Verifier) VerifyBound(c Context, p Membership, scope, message string) error {
 	if c.Depth != "16" && c.Depth != "26" || p.Depth != c.Depth {
 		return fmt.Errorf("ERR_CIRCUIT_DEPTH")
 	}
@@ -144,7 +151,6 @@ func (v *Verifier) Verify(c Context, ballot []byte, p Membership) error {
 			return e
 		}
 	}
-	scope, message := Binding(c.NetworkID, c.PollID, ballot)
 	if p.Scope != scope || p.Message != message {
 		return fmt.Errorf("ERR_PROOF_CONTEXT")
 	}

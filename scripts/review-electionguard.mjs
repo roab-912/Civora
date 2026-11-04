@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
+import "./electionguard-lock.mjs";
 const review = JSON.parse(
   readFileSync("spec/crypto/electionguard-v2.review.json", "utf8"),
 );
@@ -24,11 +25,13 @@ if (
   review.design_version !== "2.0.0" ||
   review.serialization_version !== "0.0.1" ||
   review.qualified !== false ||
-  review.status !== "blocked_interoperability" ||
-  review.review_scope !== "source_review_only_no_sdk_execution" ||
+  review.status !== "development_interop_verified" ||
+  review.development_interop_verified !== true ||
+  review.review_scope !==
+    "sdk_execution_and_independent_go_typescript_development_vectors" ||
   !/^[0-9a-f]{40}$/.test(review.candidate_commit) ||
   review.artifacts.length !== 5 ||
-  review.blockers.length !== 3
+  review.blockers.length !== 0
 )
   throw Error(
     "unexpected ElectionGuard review; qualification requires an explicit reviewed implementation change",
@@ -82,14 +85,63 @@ for (const a of review.artifacts) {
     verify(readFileSync(path));
   }
 }
+if (args.includes("--require-qualified")) {
+  const {
+    verifyCeremony,
+    verifyBallot,
+    verifyTally,
+    zeroAggregate,
+    addAggregate,
+  } = await import("../dist/web/src/electionguard.js");
+  const { verifyScale } = await import(
+    "../dist/web/src/electionguard-scale.js"
+  );
+  try {
+    const vectors = JSON.parse(
+      readFileSync("spec/fixtures/v0.4/crypto.json", "utf8"),
+    );
+    for (const c of vectors.cases) {
+      const election = await verifyCeremony(c.context, c.ceremony_bundle);
+      let aggregate = zeroAggregate();
+      for (const encoded of c.ballots) {
+        const b = await verifyBallot(election, encoded);
+        aggregate = addAggregate(aggregate, b.ciphertext);
+      }
+      if (aggregate !== c.aggregate) throw Error("EG aggregate gate");
+      const result = await verifyTally(
+        election,
+        aggregate,
+        c.count,
+        c.tally_bundle,
+      );
+      if (result.yes !== c.yes || result.no !== c.no)
+        throw Error("EG tally gate");
+    }
+    const s = JSON.parse(readFileSync("spec/fixtures/v0.4/scale.json", "utf8")),
+      f = vectors.cases[0],
+      e = await verifyCeremony(f.context, f.ceremony_bundle);
+    await verifyScale(e, s.context, s.valid);
+    let refused = false;
+    try {
+      await verifyScale(e, s.context, s.copy_attack);
+    } catch (error) {
+      if (String(error).includes("INDEPENDENCE")) refused = true;
+    }
+    if (!refused) throw Error("copied ciphertext gate");
+  } finally {
+    if (globalThis.curve_bn128) await globalThis.curve_bn128.terminate();
+  }
+}
 console.log(
   JSON.stringify({
     suite: review.suite,
     qualified: false,
     status: review.status,
     source_integrity: checkSources ? "verified" : "not_checked",
-    crypto_vectors: "not_qualified",
-    decision: "spec/decisions/0009-electionguard-interop.md",
+    development_interop_verified: true,
+    crypto_vectors: args.includes("--require-qualified")
+      ? "verified"
+      : "pinned_not_executed",
+    decision: "spec/decisions/0010-electionguard-v0.4.md",
   }),
 );
-if (args.includes("--require-qualified")) process.exitCode = 2;

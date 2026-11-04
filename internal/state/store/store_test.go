@@ -49,11 +49,20 @@ func crashFixture(t *testing.T, name string) testutil.Fixture {
 	if name == "eligibility" {
 		return testutil.WithEligibility(testutil.Load(t, "accounts"), "26")
 	}
+	if strings.HasPrefix(name, "eg-") {
+		return testutil.Load(t, "v0.4/replay-mixed")
+	}
 	return testutil.Load(t, name)
 }
 func TestAbruptProcessDeathAndReplay(t *testing.T) {
-	for _, fixture := range []string{"accounts", "activation", "eligibility"} {
+	for _, fixture := range []string{"accounts", "activation", "eligibility", "eg-configuration", "eg-vote", "eg-tally"} {
 		for _, point := range []string{"partial_write", "after_write", "after_sync", "after_rename", "after_directory_sync"} {
+			// Byte-write fault phases already have full coverage above. These
+			// six additional deaths exercise real encrypted ceremony/vote/tally
+			// state just before and just after the durability boundary.
+			if strings.HasPrefix(fixture, "eg-") && point != "after_sync" && point != "after_rename" {
+				continue
+			}
 			t.Run(fixture+"/"+point, func(t *testing.T) {
 				f := crashFixture(t, fixture)
 				dir := t.TempDir()
@@ -63,6 +72,15 @@ func TestAbruptProcessDeathAndReplay(t *testing.T) {
 				}
 				// Stop during rotation, or during the first block of a new epoch.
 				index := 1
+				if fixture == "eg-configuration" {
+					index = 3
+				}
+				if fixture == "eg-vote" {
+					index = 5
+				}
+				if fixture == "eg-tally" {
+					index = 7
+				}
 				if fixture == "activation" {
 					index = 2
 				}

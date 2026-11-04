@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/v0.1/scale_context",
+  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/scale_context"
+}

@@ -1,8 +1,9 @@
 {
   "suite": "eg-2.0-civic-1",
   "qualified": false,
-  "status": "blocked_interoperability",
-  "review_scope": "source_review_only_no_sdk_execution",
+  "status": "development_interop_verified",
+  "development_interop_verified": true,
+  "review_scope": "sdk_execution_and_independent_go_typescript_development_vectors",
   "design_version": "2.0.0",
   "serialization_version": "0.0.1",
   "candidate_commit": "194b9c788ccaecda8719c227bd41ce57a3b857be",
@@ -38,9 +39,12 @@
       "sha256": "7868b998368a99f77a6fd1533c50cf936720e94ddf9bed82d5921e99f37b49e8"
     }
   ],
-  "blockers": [
+  "resolved_by_explicit_civic_mapping": [
     "Serialization 0.0.1 sections 0.7.8 and 0.7.12 are TODO; section 0.7.11 is an unfinished example; no global tally serialization is specified.",
     "The reviewed Kotlin 2.0 candidate explicitly uses mostly serialization 1.9; no Civic field mapping or conversion oracle is qualified.",
     "No shared browser adapter, audited ephemeral selection nonce export, frozen compact transcript or independent complete Go/TypeScript crypto vectors have been qualified."
-  ]
+  ],
+  "blockers": [],
+  "mapping": "spec/interop/electionguard-v0.4.md",
+  "lock": "spec/crypto/electionguard-v2.lock.json"
 }

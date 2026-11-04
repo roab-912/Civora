@@ -1,5 +1,5 @@
 {
-  "profile": "development-v0.3-with-v0.1-v0.2-replay",
+  "profile": "development-v0.4-with-v0.1-v0.2-v0.3-replay",
   "toolchain": {
     "go_tested": "go1.27.3 windows/amd64",
     "go_minimum": "1.26.0",
@@ -35,10 +35,33 @@
     "sdk_version": "4.14.5",
     "circuit_version": "4.13.0",
     "artifact_lock": "spec/crypto/semaphore-v4.lock.json",
-    "circuit_depths": ["16", "26"],
+    "circuit_depths": [
+      "16",
+      "26"
+    ],
     "path_cli": "cmd/civeligibility",
     "test_identities": "spec/fixtures/v0.3/identities.TEST_ONLY.json",
     "physical_mobile_validation": "pending",
-    "electionguard_implemented": false
+    "electionguard_implemented": true
+  },
+  "electionguard_v0_4": {
+    "suite": "eg-2.0-civic-1",
+    "profile": "electionguard_v0_4",
+    "design": "2.0.0",
+    "encoding": "eg-civic-compact-1",
+    "artifact_lock": "spec/crypto/electionguard-v2.lock.json",
+    "sdk_commit": "194b9c788ccaecda8719c227bd41ce57a3b857be",
+    "guardians": "3/5",
+    "real_encrypted_replay": true,
+    "independent_verifiers": [
+      "Go",
+      "TypeScript"
+    ],
+    "scale_verification_only": true,
+    "public_pilot_qualified": false,
+    "test_secrets": [
+      "spec/fixtures/v0.4/actors.TEST_ONLY.json",
+      "spec/fixtures/v0.4/oracle.TEST_ONLY.json"
+    ]
   }
 }

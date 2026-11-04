@@ -1,45 +1,85 @@
 {
   "milestone": "v0.4",
-  "status": "incomplete_interoperability_gate",
-  "suite_qualified": false,
-  "source_integrity": "five_pinned_artifacts_downloaded_and_sha256_verified",
-  "sdk_build_or_execution": "not_executed",
-  "implemented": [
-    "strict_independent_go_and_typescript_civic_envelope_decoders",
-    "exact_paths_base64url_jcs_resource_bounds_and_civic_ceremony_link",
-    "deterministic_envelope_only_cross_language_fixtures",
-    "offline_archive_envelope_inspection_without_crypto_validity_claim",
-    "explicit_qualification_gate_exit_2",
-    "unconfigured_engine_replay_stops_at_ceremony_without_state_change"
-  ],
-  "envelope_vectors": "59",
-  "envelope_vectors_accepted_only_as_transport": "3",
-  "envelope_vectors_rejected": "56",
+  "status": "development_acceptance_passed",
+  "suite": "eg-2.0-civic-1",
+  "development_interop_verified": true,
+  "public_pilot_qualified": false,
+  "design": "2.0.0",
+  "serialization": "0.0.1_reference_with_explicit_Civic_mapping",
+  "encoding": "eg-civic-compact-1",
+  "sdk": {
+    "commit": "194b9c788ccaecda8719c227bd41ce57a3b857be",
+    "library": "2.0.4-SNAPSHOT",
+    "jdk": "Temurin 17.0.21+9",
+    "gradle": "8.6",
+    "build_and_execution": "passed_from_exact_archive_with_upstream_source_integrity_checks",
+    "frozen_proofs_reverified": true,
+    "three_of_five_global_decryption": "passed",
+    "two_of_five_decryption": "refused"
+  },
   "validation": {
     "command": "scripts/check.ps1",
     "result": "passed",
-    "typescript_tests_passed": "113",
+    "typescript_tests_passed": "117",
     "go_tests_and_vet": "passed_normal_and_civora_sim_builds",
-    "existing_replay_and_abrupt_death_scenarios": "passed_28_scenarios_with_historical_roots_unchanged",
-    "envelope_inspector": "ballot_and_ceremony_cli_executed_with_crypto_verified_false",
-    "source_gate_with_verified_artifacts": "exit_2_as_required",
-    "browser_and_10m_scale_tests_this_change": "not_rerun"
+    "abrupt_process_death_scenarios": "34",
+    "new_abrupt_death_scenarios": "6 (ceremony, real encrypted ballots, global tally; after_sync and after_rename)",
+    "historical_roots": "unchanged_v0.1_v0.2_v0.3",
+    "public_export_go_replay_and_independent_typescript_crypto_audit": "passed_for_both_polls"
   },
-  "pending_acceptance": [
-    "complete_field_mapping_and_pinned_existing_electionguard_2_0_adapter",
-    "fresh_distributed_guardian_ceremony_3_of_5_and_quorum_failures",
-    "yes_bit_encryption_and_missing_selection_rejection",
-    "independent_complete_go_and_typescript_crypto_verifiers",
-    "all_no_and_mixed_ballot_tallies_with_global_decryption_proof",
-    "tampering_false_total_and_foreign_aggregate_rejection",
-    "export_reverification_by_an_independent_operator",
-    "qualified_ephemeral_nonce_export_and_rfc8235_independence_transcript",
-    "real_semaphore_scale_binding_and_copy_under_another_nullifier_rejection",
-    "foreign_partition_and_stale_checkpoint_rejection",
-    "challenge_never_counted",
-    "frozen_compact_encoding_and_two_concordant_decoders",
-    "real_encrypted_ballot_replay_and_abrupt_process_death_scenarios"
+  "acceptance": {
+    "binary_yes_bit_and_missing_selection": "passed",
+    "all_no": "passed_0_yes_3_no",
+    "mixed": "passed_3_yes_2_no_and_ledger_effect",
+    "tampering_false_total_foreign_aggregate": "refused",
+    "guardian_quorum_and_individual_responses": "verified",
+    "copy_with_valid_second_identity_membership": "refused_by_independence_in_go_and_typescript",
+    "foreign_lane_network_poll_epoch_and_stale_checkpoint_reference": "refused_against_fixture_trust_context",
+    "challenge": "refused_before_counting",
+    "compact_group_scalar_encoding_and_concordant_decoders": "passed",
+    "real_encrypted_replay_and_restart": "passed",
+    "independent_export_verification": "passed"
+  },
+  "vectors": {
+    "envelope": "59 (3 transport-only accepted, 56 rejected)",
+    "cryptographic_rejections": "38",
+    "sdk_ballots": "8",
+    "polls": "2",
+    "inline_membership_depth": "16",
+    "scale_membership_depth": "26",
+    "scale_partitions": "32"
+  },
+  "fixture_sizes_not_a_capacity_benchmark": {
+    "decoded_ballot_bundle_mean_bytes": "4586",
+    "decoded_ballot_bundle_p95_bytes": "4586",
+    "decoded_ballot_bundle_max_bytes": "4586",
+    "canonical_scale_envelope_bytes": "8233",
+    "sample_size": "8 known development ballots; one scale envelope"
+  },
+  "replay_results": [
+    {
+      "label": "mixed",
+      "height": "9",
+      "yes": "3",
+      "no": "2",
+      "app_hash": "a89c4160ed2f37a250b0a6679d9036d5ce69cabe3dd9e938ad6594b99077fbbc"
+    },
+    {
+      "label": "all-no",
+      "height": "9",
+      "yes": "0",
+      "no": "3",
+      "app_hash": "dcdced41d52ddb987413b16a889011d796bb224513f613b856602fc52e93d875"
+    }
   ],
-  "prior_physical_mobile_browser_gate": "still_not_executed",
-  "next_milestone_started": false
+  "remaining_public_qualification": [
+    "external_cryptographic_and_application_audit",
+    "production_client_side_channel_and_secret_memory_hardening",
+    "independent_operational_guardians_and_production_key_ceremony",
+    "physical_mobile_browser_validation_from_v0.3",
+    "real_10_million_ballot_capacity_and_WAN_failures"
+  ],
+  "v0.5_not_started": true,
+  "scale_bft_context_authentication_journal_consumption_and_seals": "deferred_to_v0.5_not_simulated",
+  "browser_and_10m_eligibility_tests_this_change": "not_rerun"
 }

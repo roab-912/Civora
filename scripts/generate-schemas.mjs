@@ -266,6 +266,16 @@ for (const key of [
   "membership_context",
   "eg_bundle",
   "eg_link",
+  "eg_proof",
+  "eg_ciphertext",
+  "eg_context",
+  "eg_guardian",
+  "eg_ballot",
+  "eg_tally",
+  "eg_independence",
+  "scale_context",
+  "scale_envelope",
+  "eg_archive",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

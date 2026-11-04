@@ -16,6 +16,19 @@ export async function verifyMembership(
   proof: Membership,
 ): Promise<boolean> {
   try {
+    const expected = await binding(context.network_id, context.poll_id, ballot);
+    return await verifyMembershipBound(context, proof, expected);
+  } catch {
+    return false;
+  }
+}
+// Caller must compute this binding from its authenticated protocol profile.
+export async function verifyMembershipBound(
+  context: MembershipContext,
+  proof: Membership,
+  expected: { scope: string; message: string },
+): Promise<boolean> {
+  try {
     if (
       !["16", "26"].includes(context.circuit_depth) ||
       context.suite_id !== "semaphore-v4.14.5-depth-" + context.circuit_depth ||
@@ -31,7 +44,6 @@ export async function verifyMembership(
       return false;
     decimal(proof.merkleTreeRoot, scalarModulus - 1n);
     decimal(proof.nullifier, scalarModulus - 1n);
-    const expected = await binding(context.network_id, context.poll_id, ballot);
     if (
       proof.scope !== expected.scope ||
       proof.message !== expected.message ||

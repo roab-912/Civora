@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/v0.1/eg_tally",
+  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eg_tally"
+}

@@ -27,20 +27,20 @@ const fixture = JSON.parse(
     inspection?: unknown;
   }[];
 };
-test("ElectionGuard qualification gate fails closed independently of envelope inspection", () => {
+test("ElectionGuard development interop gate verifies crypto separately from envelope inspection", () => {
   const result = spawnSync(
     process.execPath,
     ["scripts/review-electionguard.mjs", "--require-qualified"],
     { encoding: "utf8" },
   );
-  assert.equal(result.status, 2, result.stderr);
+  assert.equal(result.status, 0, result.stderr);
   const review = JSON.parse(result.stdout) as {
     qualified: boolean;
     status: string;
     source_integrity: string;
   };
   assert.equal(review.qualified, false);
-  assert.equal(review.status, "blocked_interoperability");
+  assert.equal(review.status, "development_interop_verified");
   assert.equal(review.source_integrity, "not_checked");
 });
 for (const v of fixture.vectors)

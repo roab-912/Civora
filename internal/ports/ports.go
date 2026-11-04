@@ -26,6 +26,9 @@ type PollContext struct {
 	GroupRoot                                                                       *string
 	Commitments                                                                     []string
 	CeremonyDigest                                                                  string
+	// Encoded immutable public ceremony and roster, supplied by ledger replay.
+	CeremonyBundle string
+	GuardianIDs    []string
 }
 type AcceptedBallot struct{ Nullifier, BallotID, CiphertextDigest, ConfirmationCode, Aggregate string }
 type TallyResult struct{ Yes, No string }

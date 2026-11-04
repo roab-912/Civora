@@ -1,6 +1,6 @@
 # 0009 — Enveloppes ElectionGuard et arrêt à la porte d’interopérabilité v0.4
 
-Date : 2026-11-04. Statut : enveloppe de développement implémentée ; suite cryptographique **non qualifiée**. Le jalon v0.4 reste incomplet et v0.5 ne commence pas.
+Date : 2026-11-04. Statut : **décision provisoire remplacée par [0010](0010-electionguard-v0.4.md)** après exécution du SDK et validation croisée. Les mentions de blocage ci-dessous décrivent l’état antérieur.
 
 La lecture des références exactes du §7.1 a révélé un contrat de sérialisation incomplet. Le PDF officiel **ElectionGuard 2.0 — Data Serialization Specification 0.0.1**, daté du 30 juillet 2024, laisse les données préélectorales (§0.7.8, page 10) et le bulletin chiffré (§0.7.12, page 12) à compléter. Son exemple de bulletin (§0.7.11, pages 11–12) reste provisoire. Le document ne fournit pas de structure de déchiffrement du total global. Le PDF est distribué dans la release GitHub `v2.1`, mais son contenu concerne bien la sérialisation **2.0** : le chemin de téléchargement ne permet pas d’en déduire la version du protocole.
 

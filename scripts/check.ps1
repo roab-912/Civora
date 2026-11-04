@@ -20,16 +20,22 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Eligibility SDK fixtures differ' }
     & node scripts/generate-electionguard-fixtures.mjs --check
     if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard envelope fixtures differ' }
-    & node scripts/review-electionguard.mjs
-    if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard source review is inconsistent' }
-    & $goExe test ./... -count=1 -timeout 120s
+    & node scripts/prepare-electionguard-oracle.mjs --check
+    if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard deterministic actors differ' }
+    foreach ($script in @('materialize-electionguard','generate-electionguard-negatives','generate-encrypted-fixtures','generate-scale-fixtures')) {
+        & node ('scripts/'+$script+'.mjs') --check
+        if ($LASTEXITCODE -ne 0) { throw "ElectionGuard fixture differs: $script" }
+    }
+    & node scripts/review-electionguard.mjs --require-qualified
+    if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard development interop gate failed' }
+    & $goExe test ./... -count=1 -timeout 300s
     if ($LASTEXITCODE -ne 0) { throw 'Go tests failed' }
     & $goExe vet ./...
     if ($LASTEXITCODE -ne 0) { throw 'Go vet failed' }
     $nodeDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnode
     if ($LASTEXITCODE -ne 0) { throw 'Node dependency inspection failed' }
     if ($nodeDependencies -contains 'civora/internal/simulation') { throw 'Simulation linked into civnode' }
-    & $goExe test -tags civora_sim ./... -count=1 -timeout 180s
+    & $goExe test -tags civora_sim ./... -count=1 -timeout 300s
     if ($LASTEXITCODE -ne 0) { throw 'Governance simulation tests failed' }
     & $goExe vet -tags civora_sim ./...
     if ($LASTEXITCODE -ne 0) { throw 'Simulation vet failed' }
@@ -37,6 +43,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Governance fixtures differ' }
     & $goExe run ./cmd/civeligibility fixtures -check
     if ($LASTEXITCODE -ne 0) { throw 'Eligibility account fixture differs' }
+    & $goExe run ./cmd/civcrypto fixtures -check
+    if ($LASTEXITCODE -ne 0) { throw 'Encrypted replay fixtures differ' }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'
     $activationStore = Join-Path $runDirectory 'activation'
@@ -61,6 +69,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Eligibility index resume failed' }
     & $goExe run ./cmd/civeligibility path -store $eligibilityIndex -height 2 -index 1
     if ($LASTEXITCODE -ne 0) { throw 'Historical eligibility path failed' }
+    foreach ($label in @('mixed','all-no')) {
+        $encryptedStore=Join-Path $runDirectory ('encrypted-'+$label)
+        $publicArchive=Join-Path $runDirectory ('public-'+$label+'.json')
+        & $goExe run ./cmd/civnode replay -fixture ('spec/fixtures/v0.4/replay-'+$label+'.json') -store $encryptedStore
+        if ($LASTEXITCODE -ne 0) { throw 'Encrypted replay failed' }
+        & $goExe run ./cmd/civnode replay -fixture ('spec/fixtures/v0.4/replay-'+$label+'.json') -store $encryptedStore
+        if ($LASTEXITCODE -ne 0) { throw 'Encrypted restart failed' }
+        & $goExe run ./cmd/civcrypto export -store $encryptedStore -out $publicArchive
+        if ($LASTEXITCODE -ne 0) { throw 'Public export failed' }
+        & $goExe run ./cmd/civcrypto audit -in $publicArchive
+        if ($LASTEXITCODE -ne 0) { throw 'Independent Go archive replay failed' }
+        & node scripts/audit-electionguard.mjs -in $publicArchive
+        if ($LASTEXITCODE -ne 0) { throw 'Independent TypeScript crypto audit failed' }
+    }
     if ($Scale) {
         & node scripts/check-eligibility-scale.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Ten-million eligibility verification failed' }

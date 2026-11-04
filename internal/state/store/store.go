@@ -30,7 +30,13 @@ type Store struct {
 }
 
 func Open(dir string, genesis []byte, supportedEpoch uint64) (*Store, error) {
-	e, err := core.New(genesis, supportedEpoch)
+	return OpenWithFactory(dir, genesis, supportedEpoch, core.New)
+}
+
+// OpenWithFactory reuses exactly the same adapters during recovery. A normal
+// civnode always passes core.New; test simulators use a separate binary.
+func OpenWithFactory(dir string, genesis []byte, supportedEpoch uint64, newEngine func([]byte, uint64) (*core.Engine, error)) (*Store, error) {
+	e, err := newEngine(genesis, supportedEpoch)
 	if err != nil {
 		return nil, err
 	}

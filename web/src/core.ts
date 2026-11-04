@@ -35,6 +35,10 @@ export class Engine {
     readonly supportedEpoch = 1n,
   ) {
     this.config = decode<Config>("config", raw);
+    // This oracle covers v0.1. Governance fixtures are replayed by the Go
+    // machine and their schema, thresholds and Merkle roots checked in TS.
+    if ("governance" in this.config)
+      throw Error("ERR_GOVERNANCE_ORACLE_UNAVAILABLE");
     if (chainID(this.config.network_id) !== this.config.chain_id)
       throw Error("invalid chain_id");
     validateRegistry(this.config.registry);

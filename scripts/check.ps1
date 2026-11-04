@@ -17,13 +17,27 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Go tests failed' }
     & $goExe vet ./...
     if ($LASTEXITCODE -ne 0) { throw 'Go vet failed' }
+    $nodeDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnode
+    if ($LASTEXITCODE -ne 0) { throw 'Node dependency inspection failed' }
+    if ($nodeDependencies -contains 'civora/internal/simulation') { throw 'Simulation linked into civnode' }
+    & $goExe test -tags civora_sim ./... -count=1 -timeout 180s
+    if ($LASTEXITCODE -ne 0) { throw 'Governance simulation tests failed' }
+    & $goExe vet -tags civora_sim ./...
+    if ($LASTEXITCODE -ne 0) { throw 'Simulation vet failed' }
+    & $goExe run -tags civora_sim ./cmd/civsim fixtures --check
+    if ($LASTEXITCODE -ne 0) { throw 'Governance fixtures differ' }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'
     $activationStore = Join-Path $runDirectory 'activation'
+    $governanceStore = Join-Path $runDirectory 'governance'
     & $goExe run ./cmd/civnode replay -fixture spec/fixtures/accounts.json -store $accountsStore
     if ($LASTEXITCODE -ne 0) { throw 'Account replay failed' }
     & $goExe run ./cmd/civnode replay -fixture spec/fixtures/accounts.json -store $accountsStore
     if ($LASTEXITCODE -ne 0) { throw 'Account resume failed' }
     & $goExe run ./cmd/civnode replay -fixture spec/fixtures/activation.json -store $activationStore -supported-epoch 2
     if ($LASTEXITCODE -ne 0) { throw 'Activation replay failed' }
+    & $goExe run -tags civora_sim ./cmd/civsim replay -fixture spec/fixtures/v0.2/governance.json -store $governanceStore
+    if ($LASTEXITCODE -ne 0) { throw 'Governance replay failed' }
+    & $goExe run -tags civora_sim ./cmd/civsim replay -fixture spec/fixtures/v0.2/governance.json -store $governanceStore
+    if ($LASTEXITCODE -ne 0) { throw 'Governance resume failed' }
 } finally { Pop-Location }

@@ -103,6 +103,22 @@ func TestStrictBase64AndIntegers(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestCanonicalTypedPointersAndNestedValues(t *testing.T) {
+	type value struct {
+		Text string `json:"text"`
+	}
+	v := &value{Text: "é"}
+	if got := string(codec.Must(v)); got != `{"text":"é"}` {
+		t.Fatal(got)
+	}
+	if got := string(codec.Must(map[string]any{"value": v})); got != `{"value":{"text":"é"}}` {
+		t.Fatal(got)
+	}
+	if _, err := codec.Canonical(map[string]any{"number": 42}); err == nil {
+		t.Fatal("numeric field accepted")
+	}
+}
 func FuzzCanonicalRoundTrip(f *testing.F) {
 	for _, s := range []string{`{}`, `{"é":"😀"}`, `["1",null,true]`, `{"x":"\\n"}`} {
 		f.Add(s)

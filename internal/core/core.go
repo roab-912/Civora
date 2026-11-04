@@ -2,6 +2,9 @@ package core
 
 import (
 	"civora/internal/codec"
+	"civora/internal/effects"
+	"civora/internal/governance"
+	"civora/internal/ports"
 	"civora/internal/state"
 	"civora/internal/upgrade"
 	"crypto/ed25519"
@@ -17,12 +20,13 @@ const MaxTxBytes = 256 * 1024
 const MaxBlockBytes = 2 * 1024 * 1024
 
 type Config struct {
-	NetworkID     string           `json:"network_id"`
-	ChainID       string           `json:"chain_id"`
-	VotingProfile string           `json:"voting_profile"`
-	Mode          string           `json:"mode"`
-	Registry      upgrade.Registry `json:"registry"`
-	Activations   []upgrade.Armed  `json:"activations"`
+	NetworkID     string             `json:"network_id"`
+	ChainID       string             `json:"chain_id"`
+	VotingProfile string             `json:"voting_profile"`
+	Mode          string             `json:"mode"`
+	Registry      upgrade.Registry   `json:"registry"`
+	Activations   []upgrade.Armed    `json:"activations"`
+	Governance    *governance.Config `json:"governance,omitempty"`
 }
 type Payload struct {
 	SigningPK  string `json:"signing_pk"`
@@ -40,7 +44,7 @@ type Body struct {
 }
 type Auth struct {
 	Scheme    string `json:"scheme"`
-	Signature string `json:"signature"`
+	Signature string `json:"signature,omitempty"`
 }
 type Transaction struct {
 	Body Body `json:"body"`
@@ -83,9 +87,21 @@ type Engine struct {
 	Time           uint64
 	SupportedEpoch uint64
 	upgrades       map[string]UpgradeState
+	Governance     *governance.State
+	adapters       Adapters
+}
+
+type Adapters struct {
+	Eligibility ports.EligibilityProvider
+	Voting      ports.VotingCrypto
+	Effects     ports.EffectAdapter
+	Profile     string
 }
 
 func New(raw []byte, supportedEpoch uint64) (*Engine, error) {
+	return NewWithAdapters(raw, supportedEpoch, Adapters{})
+}
+func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Engine, error) {
 	var c Config
 	if e := codec.Decode(raw, "config", &c); e != nil {
 		return nil, e
@@ -102,6 +118,23 @@ func New(raw []byte, supportedEpoch uint64) (*Engine, error) {
 		return nil, fmt.Errorf("ERR_UNSUPPORTED_EPOCH")
 	}
 	n := &Engine{Config: c, Accounts: map[string]Account{}, SupportedEpoch: supportedEpoch, upgrades: map[string]UpgradeState{}}
+	if adapters.Effects == nil {
+		adapters.Effects = effects.LedgerOnly{}
+	}
+	n.adapters = adapters
+	if c.Governance != nil {
+		if c.Governance.CryptoProfile == "simulation_v0_2" && adapters.Profile != "simulation_v0_2" {
+			return nil, fmt.Errorf("ERR_SIMULATION_DISABLED")
+		}
+		if adapters.Profile != "" && adapters.Profile != c.Governance.CryptoProfile {
+			return nil, fmt.Errorf("ERR_CRYPTO_PROFILE")
+		}
+		var err error
+		n.Governance, err = governance.New(*c.Governance)
+		if err != nil {
+			return nil, err
+		}
+	}
 	r := c.Registry
 	last := uint64(0)
 	for _, a := range c.Activations {
@@ -126,10 +159,14 @@ func New(raw []byte, supportedEpoch uint64) (*Engine, error) {
 func (e *Engine) Snapshot() State {
 	height, tm := strconv.FormatUint(e.Height, 10), strconv.FormatUint(e.Time, 10)
 	network := struct {
-		Config Config `json:"config"`
-		Height string `json:"height"`
-		TimeMS string `json:"time_ms"`
-	}{e.Config, height, tm}
+		Config     Config                   `json:"config"`
+		Height     string                   `json:"height"`
+		TimeMS     string                   `json:"time_ms"`
+		Governance *governance.NetworkState `json:"governance,omitempty"`
+	}{Config: e.Config, Height: height, TimeMS: tm}
+	if e.Governance != nil {
+		network.Governance = &e.Governance.Network
+	}
 	entries := []state.Entry{{Table: "network", Key: "config", Value: network}}
 	for id, a := range e.Accounts {
 		entries = append(entries, state.Entry{Table: "accounts", Key: id, Value: a})
@@ -137,12 +174,15 @@ func (e *Engine) Snapshot() State {
 	for id, u := range e.upgrades {
 		entries = append(entries, state.Entry{Table: "upgrades", Key: id, Value: u})
 	}
+	if e.Governance != nil {
+		entries = append(entries, e.Governance.Entries()...)
+	}
 	sort.Slice(entries, func(i, j int) bool {
 		a, b := entries[i], entries[j]
 		if a.Table != b.Table {
 			return a.Table < b.Table
 		}
-		return a.Key < b.Key
+		return string(codec.Must(a.Key)) < string(codec.Must(b.Key))
 	})
 	return State{height, tm, entries}
 }
@@ -156,6 +196,9 @@ func (e *Engine) Clone() *Engine {
 		n.Accounts[id] = a
 	}
 	n.upgrades = make(map[string]UpgradeState, len(e.upgrades))
+	if e.Governance != nil {
+		n.Governance = e.Governance.Clone()
+	}
 	for id, u := range e.upgrades {
 		n.upgrades[id] = u
 	}
@@ -197,6 +240,18 @@ func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
 	if err := codec.Decode(raw, "block", &b); err != nil {
 		return nil, nil, err
 	}
+	votes, ceremonies := 0, 0
+	for _, tx := range b.Transactions {
+		switch tx.Body.Type {
+		case "vote.cast":
+			votes++
+		case "poll.configure", "poll.tally":
+			ceremonies++
+		}
+	}
+	if votes > 32 || ceremonies > 4 {
+		return nil, nil, fmt.Errorf("ERR_BLOCK_BUDGET")
+	}
 	h, err := codec.Uint(b.Height)
 	if err != nil || e.Height == ^uint64(0) || h != e.Height+1 {
 		return nil, nil, fmt.Errorf("ERR_HEIGHT")
@@ -221,6 +276,9 @@ func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
 		if !a.At(h) {
 			continue
 		}
+		if n.Governance != nil && n.Governance.LivePolls() > 0 {
+			return nil, nil, fmt.Errorf("ERR_UPGRADE_BARRIER")
+		}
 		lo, _ := codec.Uint(a.Plan.Activation.NotBeforeMS)
 		hi, _ := codec.Uint(a.Instance.ExpiresAtMS)
 		armEnd, _ := codec.Uint(a.Instance.ArmWindowEndMS)
@@ -238,11 +296,29 @@ func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
 		n.upgrades[a.PlanID] = u
 		emit("protocol.activate", a.PlanID)
 	}
-	for _, tx := range b.Transactions {
-		if err := n.applyTransaction(tx); err != nil {
+	if n.Governance != nil {
+		if err := n.Governance.Advance(n.execution(e, emit)); err != nil {
 			return nil, nil, err
 		}
-		emit(tx.Body.Type, tx.Body.ActorID)
+	}
+	for i, tx := range b.Transactions {
+		if err := n.applyTransaction(tx, emit, strconv.Itoa(i)); err != nil {
+			return nil, nil, err
+		}
+		subject := tx.Body.ActorID
+		if isProof(tx.Body.Type) {
+			var p struct {
+				PollID string `json:"poll_id"`
+			}
+			_ = json.Unmarshal(tx.Body.Payload, &p)
+			subject = p.PollID
+		}
+		emit(tx.Body.Type, subject)
+	}
+	if n.Governance != nil {
+		if err := n.Governance.Qualify(n.execution(e, emit)); err != nil {
+			return nil, nil, err
+		}
 	}
 	return n, events, nil
 }
@@ -254,9 +330,9 @@ func (e *Engine) CheckTx(raw []byte) error {
 	if err := codec.Decode(raw, "transaction", &tx); err != nil {
 		return err
 	}
-	return e.Clone().applyTransaction(tx)
+	return e.Clone().applyTransaction(tx, func(string, string) {}, "0")
 }
-func (e *Engine) applyTransaction(tx Transaction) error {
+func (e *Engine) applyAccount(tx Transaction) error {
 	if len(codec.Must(tx)) > MaxTxBytes {
 		return fmt.Errorf("ERR_SIZE")
 	}

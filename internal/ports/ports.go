@@ -4,6 +4,48 @@ package ports
 
 import "context"
 
+// Governance adapters are pure: no clock, network, files or external effects
+// may be consulted during deterministic validation.
+type EligibilityAccount struct {
+	ID         string
+	Commitment string
+}
+type EligibilityRequest struct {
+	NetworkID, Epoch, PollID, Height string
+	Accounts                         []EligibilityAccount
+}
+type EligibilityGroup struct {
+	Root        *string
+	Commitments []string
+}
+type EligibilityProvider interface {
+	Snapshot(EligibilityRequest) (EligibilityGroup, error)
+}
+type PollContext struct {
+	NetworkID, PollID, ProposalID, Epoch, EligibilitySuite, BallotSuite, TallySuite string
+	GroupRoot                                                                       *string
+	Commitments                                                                     []string
+	CeremonyDigest                                                                  string
+}
+type AcceptedBallot struct{ Nullifier, BallotID, CiphertextDigest, ConfirmationCode, Aggregate string }
+type TallyResult struct{ Yes, No string }
+type VotingCrypto interface {
+	Configure(PollContext, []byte) (string, error)
+	Accept(PollContext, string, []byte) (AcceptedBallot, error)
+	Tally(PollContext, string, string, []byte) (TallyResult, error)
+}
+type EffectRequest struct {
+	NetworkID, ProposalID, Action, EffectiveMS string
+	Payload                                    []byte
+}
+type EffectReceipt struct {
+	Profile   string `json:"profile"`
+	Reference string `json:"reference"`
+}
+type EffectAdapter interface {
+	Evaluate(EffectRequest) (EffectReceipt, error)
+}
+
 type SnapshotRef struct{ NetworkID, Height, Root, SuiteID, Epoch string }
 type EligibilitySnapshot interface {
 	Freeze(previousHeight string) (SnapshotRef, error)

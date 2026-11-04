@@ -1,4 +1,5 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { governanceSchemas } from "./governance-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -228,6 +229,7 @@ const definitions = {
   negative,
   revoked,
 };
+governanceSchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",

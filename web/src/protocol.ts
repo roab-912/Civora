@@ -276,7 +276,7 @@ export interface Event {
 }
 export interface Entry {
   table: string;
-  key: string;
+  key: string | string[];
   value: unknown;
 }
 export interface State {

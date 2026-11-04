@@ -59,6 +59,9 @@ func Canonical(value any) ([]byte, error) {
 		}
 		d := json.NewDecoder(bytes.NewReader(b))
 		d.UseNumber()
+		// A non-nil pointer held in an interface would otherwise be decoded
+		// back into its concrete type instead of generic JSON values.
+		value = nil
 		if err = d.Decode(&value); err != nil {
 			return nil, err
 		}
@@ -137,8 +140,14 @@ func Canonical(value any) ([]byte, error) {
 				}
 			}
 			out.WriteByte('}')
-		default:
+		case json.Number:
 			return fmt.Errorf("unsupported JSON type %T (integers must be strings)", v)
+		default:
+			encoded, err := Canonical(v)
+			if err != nil {
+				return err
+			}
+			out.Write(encoded)
 		}
 		return nil
 	}

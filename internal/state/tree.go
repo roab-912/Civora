@@ -10,7 +10,7 @@ import (
 
 type Entry struct {
 	Table string `json:"table"`
-	Key   string `json:"key"`
+	Key   any    `json:"key"`
 	Value any    `json:"value"`
 }
 type leaf struct {

@@ -175,6 +175,9 @@
                 },
                 "time_ms": {
                   "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "governance": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/governance_network"
                 }
               },
               "required": [
@@ -232,6 +235,296 @@
             "value"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "proposals"
+            },
+            "key": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/proposal"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "polls"
+            },
+            "key": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/poll"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "objects"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "enum": [
+                    "law",
+                    "role"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/object"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "revisions"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "enum": [
+                    "law",
+                    "role"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/revision"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "grants"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/grant"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "spent"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,77})$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "tx_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "height": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "position": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "tx_id",
+                "height",
+                "position"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "ballots"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "confirmation_code": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "height": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "tx_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "digest",
+                "confirmation_code",
+                "height",
+                "tx_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "ciphertexts"
+            },
+            "key": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -247,7 +540,30 @@
             "account.register",
             "account.rotate",
             "account.retire",
-            "protocol.activate"
+            "protocol.activate",
+            "proposal.submit",
+            "proposal.endorse",
+            "role.publish",
+            "poll.configure",
+            "vote.cast",
+            "poll.tally",
+            "proposal.collecting",
+            "proposal.qualified",
+            "proposal.preparing",
+            "proposal.scheduled",
+            "proposal.open",
+            "proposal.tallying",
+            "proposal.adopted",
+            "proposal.applied",
+            "proposal.rejected",
+            "proposal.conflict",
+            "proposal.expired",
+            "proposal.failed_setup",
+            "proposal.failed_window",
+            "proposal.failed_tally",
+            "grant.expired",
+            "grant.revoked",
+            "poll.empty"
           ]
         },
         "subject": {
@@ -647,6 +963,746 @@
             "auth"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "proposal.submit"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/submission"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "proposal.endorse"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "proposal_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "proposal_id"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "role.publish"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/publication"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "poll.configure"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/configure"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "vote.cast"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/vote"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "poll.tally"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/tally"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "proposal.submit"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/submission"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "proposal.endorse"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "proposal_id": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "proposal_id"
+                  ],
+                  "additionalProperties": false
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "role.publish"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/publication"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "poll.configure"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/configure"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "vote.cast"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/vote"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "poll.tally"
+                },
+                "actor_id": {
+                  "type": "null"
+                },
+                "nonce": {
+                  "type": "null"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/tally"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "proof"
+                }
+              },
+              "required": [
+                "scheme"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -676,6 +1732,9 @@
             "$ref": "https://civora.invalid/v0.1/protocol#/$defs/armed"
           },
           "maxItems": 16
+        },
+        "governance": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/governance_config"
         }
       },
       "required": [
@@ -1036,7 +2095,7 @@
           "items": {
             "$ref": "https://civora.invalid/v0.1/protocol#/$defs/entry"
           },
-          "maxItems": 131089
+          "maxItems": 1048576
         }
       },
       "required": [
@@ -1060,7 +2119,7 @@
           "items": {
             "$ref": "https://civora.invalid/v0.1/protocol#/$defs/event"
           },
-          "maxItems": 8208
+          "maxItems": 32768
         },
         "app_hash": {
           "type": "string",
@@ -1110,6 +2169,9 @@
             "maxItems": 8208
           },
           "maxItems": 1024
+        },
+        "expected_state": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/state"
         }
       },
       "required": [
@@ -1173,6 +2235,3634 @@
         "registry",
         "plan",
         "expected_error"
+      ],
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "collection_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "queue_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "setup_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "notice_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "voting_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "tally_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "endorsements_required": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "ordinary_quorum_bps": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "constitutional_quorum_bps": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "ordinary_execution_delay_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "constitutional_execution_delay_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "collection_ms",
+        "queue_ms",
+        "setup_ms",
+        "notice_ms",
+        "voting_ms",
+        "tally_ms",
+        "endorsements_required",
+        "ordinary_quorum_bps",
+        "constitutional_quorum_bps",
+        "ordinary_execution_delay_ms",
+        "constitutional_execution_delay_ms"
+      ],
+      "additionalProperties": false
+    },
+    "guardian": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signing_pk": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "account_id",
+        "signing_pk"
+      ],
+      "additionalProperties": false
+    },
+    "governance_config": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+        },
+        "guardians": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+          },
+          "maxItems": 5,
+          "minItems": 5
+        },
+        "crypto_profile": {
+          "enum": [
+            "unconfigured",
+            "simulation_v0_2"
+          ]
+        },
+        "eligibility_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "ballot_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "tally_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "effect_profile": {
+          "const": "ledger_only_v1"
+        }
+      },
+      "required": [
+        "policy",
+        "guardians",
+        "crypto_profile",
+        "eligibility_suite",
+        "ballot_suite",
+        "tally_suite",
+        "effect_profile"
+      ],
+      "additionalProperties": false
+    },
+    "governance_network": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+        },
+        "policy_revision": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "guardian_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "guardians": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      },
+      "required": [
+        "policy",
+        "policy_revision",
+        "guardian_epoch",
+        "guardians"
+      ],
+      "additionalProperties": false
+    },
+    "law_content": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 131072
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255,
+          "pattern": "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$"
+        }
+      },
+      "required": [
+        "title",
+        "text",
+        "language"
+      ],
+      "additionalProperties": false
+    },
+    "role_content": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 8192
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "annotate_proposal",
+              "publish_notice",
+              "report_implementation"
+            ]
+          },
+          "maxItems": 5,
+          "uniqueItems": true
+        },
+        "scope_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "label",
+        "description",
+        "capabilities",
+        "scope_id"
+      ],
+      "additionalProperties": false
+    },
+    "submission": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.create"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "type": "null"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/law_content"
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.amend"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/law_content"
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.repeal"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.restore"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "source_revision": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "source_revision"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.create"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "type": "null"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/role_content"
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.amend"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/role_content"
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.retire"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.restore"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "source_revision": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "source_revision"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.grant"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "account_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "until_ms": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "account_id",
+                "until_ms"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.revoke"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "grant_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "grant_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "policy.update"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "policy": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+                }
+              },
+              "required": [
+                "policy"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "publication": {
+      "type": "object",
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability": {
+          "enum": [
+            "annotate_proposal",
+            "publish_notice",
+            "report_implementation"
+          ]
+        },
+        "target_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 8192
+        }
+      },
+      "required": [
+        "role_id",
+        "capability",
+        "target_id",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "membership": {
+      "type": "object",
+      "properties": {
+        "merkleTreeDepth": {
+          "const": "16"
+        },
+        "merkleTreeRoot": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "nullifier": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "message": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,77})$"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,77})$"
+          },
+          "maxItems": 8,
+          "minItems": 8
+        }
+      },
+      "required": [
+        "merkleTreeDepth",
+        "merkleTreeRoot",
+        "nullifier",
+        "message",
+        "scope",
+        "points"
+      ],
+      "additionalProperties": false
+    },
+    "configure": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ceremony_bundle": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]*$",
+          "maxLength": 349526
+        },
+        "guardian_acks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "account_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{128}$"
+              }
+            },
+            "required": [
+              "account_id",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      },
+      "required": [
+        "poll_id",
+        "ceremony_bundle",
+        "guardian_acks"
+      ],
+      "additionalProperties": false
+    },
+    "vote": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "encrypted_ballot": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]*$",
+          "maxLength": 349526
+        },
+        "membership": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/membership"
+        }
+      },
+      "required": [
+        "poll_id",
+        "encrypted_ballot",
+        "membership"
+      ],
+      "additionalProperties": false
+    },
+    "tally": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "yes": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "no": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "aggregate_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "decryption_record": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]*$",
+          "maxLength": 349526
+        }
+      },
+      "required": [
+        "poll_id",
+        "yes",
+        "no",
+        "aggregate_digest",
+        "decryption_record"
+      ],
+      "additionalProperties": false
+    },
+    "proposal": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.create"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "type": "null"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/law_content"
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.amend"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/law_content"
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.repeal"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "law.restore"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "source_revision": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "source_revision"
+              ],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.create"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "type": "null"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/role_content"
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.amend"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/role_content"
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.retire"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.restore"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "source_revision": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "source_revision"
+              ],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.grant"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "account_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "until_ms": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "account_id",
+                "until_ms"
+              ],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "role.revoke"
+            },
+            "target_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "grant_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "grant_id"
+              ],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "action": {
+              "const": "policy.update"
+            },
+            "target_id": {
+              "type": "null"
+            },
+            "expected_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "rationale": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "requested_effect_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "changes": {
+              "type": "object",
+              "properties": {
+                "policy": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+                }
+              },
+              "required": [
+                "policy"
+              ],
+              "additionalProperties": false
+            },
+            "author": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "state": {
+              "enum": [
+                "collecting",
+                "qualified",
+                "preparing",
+                "scheduled",
+                "open",
+                "tallying",
+                "adopted",
+                "applied",
+                "rejected",
+                "conflict",
+                "expired",
+                "failed_setup",
+                "failed_window",
+                "failed_tally"
+              ]
+            },
+            "policy": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/policy"
+            },
+            "policy_revision": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "guardians": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/guardian"
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            "guardian_epoch": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "endorsements": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "maxItems": 65536,
+              "uniqueItems": true
+            },
+            "submitted_height": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "submitted_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "collection_due_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "qualified_height": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "qualified_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "queue_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "setup_due_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "poll_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effective_at_ms": {
+              "anyOf": [
+                {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "effect_receipt": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "const": "ledger_only_v1"
+                    },
+                    "reference": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "reference"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "action",
+            "target_id",
+            "expected_revision",
+            "rationale",
+            "requested_effect_ms",
+            "changes",
+            "author",
+            "state",
+            "policy",
+            "policy_revision",
+            "guardians",
+            "guardian_epoch",
+            "endorsements",
+            "submitted_height",
+            "submitted_ms",
+            "collection_due_ms",
+            "qualified_height",
+            "qualified_ms",
+            "queue_due_ms",
+            "setup_due_ms",
+            "poll_id",
+            "effective_at_ms",
+            "reason",
+            "effect_receipt"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "poll": {
+      "type": "object",
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "state": {
+          "enum": [
+            "collecting",
+            "qualified",
+            "preparing",
+            "scheduled",
+            "open",
+            "tallying",
+            "adopted",
+            "applied",
+            "rejected",
+            "conflict",
+            "expired",
+            "failed_setup",
+            "failed_window",
+            "failed_tally"
+          ]
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "eligibility_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "ballot_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "tally_suite": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "opens_at_ms": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closes_at_ms": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tally_due_at_ms": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "group_root": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eligible_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "snapshot_height": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "commitments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,76}$"
+          },
+          "maxItems": 65536
+        },
+        "aggregate": {
+          "type": "string",
+          "maxLength": 349526
+        },
+        "count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "closed_height": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "aggregate_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ceremony_bundle": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]*$",
+              "maxLength": 349526
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ceremony_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "yes": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "no": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "empty": {
+                  "type": "boolean"
+                },
+                "certified_height": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "certified_ms": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "yes",
+                "no",
+                "empty",
+                "certified_height",
+                "certified_ms"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "proposal_id",
+        "state",
+        "protocol_epoch",
+        "eligibility_suite",
+        "ballot_suite",
+        "tally_suite",
+        "opens_at_ms",
+        "closes_at_ms",
+        "tally_due_at_ms",
+        "group_root",
+        "eligible_count",
+        "snapshot_height",
+        "commitments",
+        "aggregate",
+        "count",
+        "closed_height",
+        "aggregate_digest",
+        "ceremony_bundle",
+        "ceremony_digest",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "object": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "law",
+            "role"
+          ]
+        },
+        "revision": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "repealed",
+            "retired"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "revision",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "revision": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "oneOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/law_content"
+            },
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/role_content"
+            }
+          ]
+        },
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_revision": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "active",
+            "repealed",
+            "retired"
+          ]
+        },
+        "effective_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "content",
+        "proposal_id",
+        "source_revision",
+        "status",
+        "effective_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "grant": {
+      "type": "object",
+      "properties": {
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "role_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "from_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "until_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "revoked",
+            "expired"
+          ]
+        },
+        "revoked_by": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ended_at_ms": {
+          "anyOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "account_id",
+        "role_id",
+        "from_ms",
+        "until_ms",
+        "status",
+        "revoked_by",
+        "ended_at_ms"
       ],
       "additionalProperties": false
     }

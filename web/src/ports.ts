@@ -44,3 +44,49 @@ export interface LedgerStore {
   appHash(): string;
   commit(block: Uint8Array): void;
 }
+
+// Pure governance ports; the transition engine performs no network I/O.
+export interface EligibilityProvider {
+  snapshot(request: {
+    networkID: string;
+    epoch: string;
+    pollID: string;
+    height: string;
+    accounts: { id: string; commitment: string }[];
+  }): { root: string | null; commitments: string[] };
+}
+export interface PollContext extends BulletinContext {
+  proposalID: string;
+  groupRoot: string | null;
+  commitments: string[];
+  ceremonyDigest: string;
+}
+export interface VotingCrypto {
+  configure(context: PollContext, bundle: Uint8Array): string;
+  accept(
+    context: PollContext,
+    aggregate: string,
+    payload: Uint8Array,
+  ): {
+    nullifier: string;
+    ballotID: string;
+    ciphertextDigest: string;
+    confirmationCode: string;
+    aggregate: string;
+  };
+  tally(
+    context: PollContext,
+    aggregate: string,
+    count: string,
+    payload: Uint8Array,
+  ): { yes: string; no: string };
+}
+export interface EffectAdapter {
+  evaluate(request: {
+    networkID: string;
+    proposalID: string;
+    action: string;
+    effectiveMS: string;
+    payload: Uint8Array;
+  }): { profile: "ledger_only_v1"; reference: string };
+}

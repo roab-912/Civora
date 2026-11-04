@@ -1,5 +1,5 @@
 {
-  "profile": "development-only-v0.1",
+  "profile": "development-v0.2-with-v0.1-replay",
   "toolchain": {
     "go_tested": "go1.27.3 windows/amd64",
     "go_minimum": "1.26.0",
@@ -21,5 +21,14 @@
   "fixtures": {
     "keys": "spec/fixtures/keys.TEST_ONLY.json",
     "warning": "Public deterministic test secrets. Synthetic artifact digests. No release authority."
+  },
+  "simulation_v0_2": {
+    "build_tag": "civora_sim",
+    "binary": "cmd/civsim",
+    "profile": "simulation_v0_2",
+    "fixture": "spec/fixtures/v0.2/governance.json",
+    "keys": "spec/fixtures/v0.2/keys.TEST_ONLY.json",
+    "secret_ballot": false,
+    "linked_into_civnode": false
   }
 }

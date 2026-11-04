@@ -156,8 +156,14 @@ func (s *State) Cast(x Execution, raw []byte, txID, position string) error {
 	if x.Crypto == nil {
 		return fmt.Errorf("ERR_VOTING_ADAPTER")
 	}
-	if _, e = codec.Blob(req.EncryptedBallot); e != nil {
+	ballotBytes, e := codec.Blob(req.EncryptedBallot)
+	if e != nil {
 		return e
+	}
+	if x.Membership != nil {
+		if e = x.Membership.VerifyMembership(ports.BulletinContext{NetworkID: x.NetworkID, PollID: req.PollID, Epoch: poll.ProtocolEpoch, EligibilitySuite: poll.EligibilitySuite, BallotSuite: poll.BallotSuite, TallySuite: poll.TallySuite}, *poll.GroupRoot, req.Membership.Depth, ballotBytes, codec.Must(req.Membership)); e != nil {
+			return e
+		}
 	}
 	accepted, e := x.Crypto.Accept(s.context(x, req.PollID, poll), poll.Aggregate, raw)
 	if e != nil {

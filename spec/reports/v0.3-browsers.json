@@ -1,0 +1,68 @@
+{
+  "physical_devices": false,
+  "mobile_emulation": true,
+  "browsers": [
+    {
+      "name": "Chromium",
+      "version": "156.0.8078.4",
+      "emulated_device": "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.4 Mobile Safari/537.36",
+      "proofs": [
+        {
+          "depth": "16",
+          "leaves": "5",
+          "path_api": false,
+          "elapsed_ms": "1153",
+          "main_thread_ticks": "95",
+          "go_verified": true
+        },
+        {
+          "depth": "26",
+          "leaves": "5",
+          "path_api": false,
+          "elapsed_ms": "1386",
+          "main_thread_ticks": "108",
+          "go_verified": true
+        },
+        {
+          "depth": "26",
+          "leaves": "10000000",
+          "path_api": true,
+          "elapsed_ms": "1413",
+          "main_thread_ticks": "86",
+          "go_verified": true
+        }
+      ]
+    },
+    {
+      "name": "WebKit",
+      "version": "27.2",
+      "emulated_device": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/27.2 Mobile/15E148 Safari/604.1",
+      "proofs": [
+        {
+          "depth": "16",
+          "leaves": "5",
+          "path_api": false,
+          "elapsed_ms": "1452",
+          "main_thread_ticks": "72",
+          "go_verified": true
+        },
+        {
+          "depth": "26",
+          "leaves": "5",
+          "path_api": false,
+          "elapsed_ms": "1726",
+          "main_thread_ticks": "96",
+          "go_verified": true
+        },
+        {
+          "depth": "26",
+          "leaves": "10000000",
+          "path_api": true,
+          "elapsed_ms": "1831",
+          "main_thread_ticks": "100",
+          "go_verified": true
+        }
+      ]
+    }
+  ]
+}

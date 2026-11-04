@@ -178,6 +178,9 @@
                 },
                 "governance": {
                   "$ref": "https://civora.invalid/v0.1/protocol#/$defs/governance_network"
+                },
+                "eligibility": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eligibility_snapshot"
                 }
               },
               "required": [
@@ -517,6 +520,27 @@
             "value": {
               "type": "string",
               "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "eligibility"
+            },
+            "key": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,76})$"
             }
           },
           "required": [
@@ -1735,6 +1759,9 @@
         },
         "governance": {
           "$ref": "https://civora.invalid/v0.1/protocol#/$defs/governance_config"
+        },
+        "eligibility": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eligibility_config"
         }
       },
       "required": [
@@ -2043,6 +2070,9 @@
             "pattern": "^[1-9][0-9]{0,76}$"
           },
           "maxItems": 262144
+        },
+        "eligibility_index": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
         }
       },
       "required": [
@@ -5863,6 +5893,208 @@
         "status",
         "revoked_by",
         "ended_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "eligibility_config": {
+      "type": "object",
+      "properties": {
+        "circuit_depth": {
+          "enum": [
+            "16",
+            "26"
+          ]
+        },
+        "suite_id": {
+          "type": "string",
+          "pattern": "^semaphore-v4\\.14\\.5-depth-(16|26)$"
+        }
+      },
+      "required": [
+        "circuit_depth",
+        "suite_id"
+      ],
+      "additionalProperties": false
+    },
+    "eligibility_snapshot": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "tree_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "suite_id": {
+          "type": "string",
+          "pattern": "^semaphore-v4\\.14\\.5-depth-(16|26)$"
+        },
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "circuit_depth": {
+          "enum": [
+            "16",
+            "26"
+          ]
+        },
+        "size": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "active_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "root": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,76})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "network_id",
+        "protocol_epoch",
+        "tree_id",
+        "suite_id",
+        "height",
+        "circuit_depth",
+        "size",
+        "active_count",
+        "root",
+        "snapshot_id"
+      ],
+      "additionalProperties": false
+    },
+    "eligibility_path": {
+      "type": "object",
+      "properties": {
+        "snapshot": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eligibility_snapshot"
+        },
+        "leaf_index": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "leaf": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "index": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "siblings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,76})$"
+          },
+          "maxItems": 26
+        }
+      },
+      "required": [
+        "snapshot",
+        "leaf_index",
+        "leaf",
+        "index",
+        "siblings"
+      ],
+      "additionalProperties": false
+    },
+    "membership_v03": {
+      "type": "object",
+      "properties": {
+        "merkleTreeDepth": {
+          "enum": [
+            "16",
+            "26"
+          ]
+        },
+        "merkleTreeRoot": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "nullifier": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "message": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,76})$"
+          },
+          "maxItems": 8,
+          "minItems": 8
+        }
+      },
+      "required": [
+        "merkleTreeDepth",
+        "merkleTreeRoot",
+        "nullifier",
+        "message",
+        "scope",
+        "points"
+      ],
+      "additionalProperties": false
+    },
+    "membership_context": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "suite_id": {
+          "type": "string",
+          "pattern": "^semaphore-v4\\.14\\.5-depth-(16|26)$"
+        },
+        "circuit_depth": {
+          "enum": [
+            "16",
+            "26"
+          ]
+        },
+        "group_root": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,76})$"
+        }
+      },
+      "required": [
+        "network_id",
+        "poll_id",
+        "protocol_epoch",
+        "suite_id",
+        "circuit_depth",
+        "group_root"
       ],
       "additionalProperties": false
     }

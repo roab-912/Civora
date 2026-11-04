@@ -9,4 +9,8 @@ try {
     $env:GOCACHE = Join-Path $projectRoot '.tools/gocache'
     & $goExe run -tags civora_sim ./cmd/civsim demo
     if ($LASTEXITCODE -ne 0) { throw 'Governance demo failed' }
+    & $goExe run ./cmd/civeligibility verify-membership -input spec/fixtures/v0.3/membership-16.json
+    if ($LASTEXITCODE -ne 0) { throw 'Semaphore depth-16 verification failed' }
+    & $goExe run ./cmd/civeligibility verify-membership -input spec/fixtures/v0.3/membership-26.json
+    if ($LASTEXITCODE -ne 0) { throw 'Semaphore depth-26 verification failed' }
 } finally { Pop-Location }

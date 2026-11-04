@@ -39,6 +39,8 @@ export class Engine {
     // machine and their schema, thresholds and Merkle roots checked in TS.
     if ("governance" in this.config)
       throw Error("ERR_GOVERNANCE_ORACLE_UNAVAILABLE");
+    if ("eligibility" in this.config)
+      throw Error("ERR_ELIGIBILITY_ORACLE_UNAVAILABLE");
     if (chainID(this.config.network_id) !== this.config.chain_id)
       throw Error("invalid chain_id");
     validateRegistry(this.config.registry);

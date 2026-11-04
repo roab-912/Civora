@@ -1,5 +1,5 @@
 {
-  "profile": "development-v0.2-with-v0.1-replay",
+  "profile": "development-v0.3-with-v0.1-v0.2-replay",
   "toolchain": {
     "go_tested": "go1.27.3 windows/amd64",
     "go_minimum": "1.26.0",
@@ -30,5 +30,15 @@
     "keys": "spec/fixtures/v0.2/keys.TEST_ONLY.json",
     "secret_ballot": false,
     "linked_into_civnode": false
+  },
+  "eligibility_v0_3": {
+    "sdk_version": "4.14.5",
+    "circuit_version": "4.13.0",
+    "artifact_lock": "spec/crypto/semaphore-v4.lock.json",
+    "circuit_depths": ["16", "26"],
+    "path_cli": "cmd/civeligibility",
+    "test_identities": "spec/fixtures/v0.3/identities.TEST_ONLY.json",
+    "physical_mobile_validation": "pending",
+    "electionguard_implemented": false
   }
 }

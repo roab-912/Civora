@@ -21,7 +21,7 @@ func TestCrashHelper(t *testing.T) {
 	if os.Getenv("CIVORA_TEST_CRASH_HELPER") != "1" {
 		return
 	}
-	f := testutil.Load(t, os.Getenv("CIVORA_TEST_FIXTURE"))
+	f := crashFixture(t, os.Getenv("CIVORA_TEST_FIXTURE"))
 	s, e := Open(os.Getenv("CIVORA_TEST_STORE"), codec.Must(f.Genesis), 2)
 	if e != nil {
 		t.Fatal(e)
@@ -44,11 +44,18 @@ func TestCrashHelper(t *testing.T) {
 	t.Fatal("crash hook not reached")
 }
 
+func crashFixture(t *testing.T, name string) testutil.Fixture {
+	t.Helper()
+	if name == "eligibility" {
+		return testutil.WithEligibility(testutil.Load(t, "accounts"), "26")
+	}
+	return testutil.Load(t, name)
+}
 func TestAbruptProcessDeathAndReplay(t *testing.T) {
-	for _, fixture := range []string{"accounts", "activation"} {
+	for _, fixture := range []string{"accounts", "activation", "eligibility"} {
 		for _, point := range []string{"partial_write", "after_write", "after_sync", "after_rename", "after_directory_sync"} {
 			t.Run(fixture+"/"+point, func(t *testing.T) {
-				f := testutil.Load(t, fixture)
+				f := crashFixture(t, fixture)
 				dir := t.TempDir()
 				s, e := Open(dir, codec.Must(f.Genesis), 2)
 				if e != nil {
@@ -150,7 +157,7 @@ func TestAbruptProcessDeathAndReplay(t *testing.T) {
 						t.Fatalf("recovered record %d differs", i)
 					}
 				}
-				if s.AppHash() != f.ExpectedRoots[len(f.ExpectedRoots)-1] {
+				if s.AppHash() != fresh.AppHash() {
 					t.Fatal("recovery changed root")
 				}
 				for _, block := range f.Blocks {

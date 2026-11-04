@@ -30,6 +30,16 @@ export interface ResultProof {
     proof: Uint8Array,
   ): void;
 }
+
+export interface MembershipVerifier {
+  verifyMembership(
+    context: BulletinContext,
+    root: string,
+    depth: "16" | "26",
+    ballot: Uint8Array,
+    proof: Uint8Array,
+  ): void;
+}
 export interface ProtocolVersion {
   beforeBlock(height: string): void;
   authorize(

@@ -62,6 +62,12 @@ type BulletinTransport interface {
 type ResultProof interface {
 	Verify(BulletinContext, []byte, []byte) error
 }
+
+// MembershipVerifier checks the real anonymous eligibility proof. Ballot
+// encryption and tally proofs remain the separate VotingCrypto boundary.
+type MembershipVerifier interface {
+	VerifyMembership(BulletinContext, string, string, []byte, []byte) error
+}
 type ProtocolVersion interface {
 	BeforeBlock(height string) error
 	Authorize(epoch, operation, moduleID string, historical bool) error

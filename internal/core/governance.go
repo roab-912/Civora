@@ -36,7 +36,7 @@ func (e *Engine) execution(previous *Engine, emit func(string, string)) governan
 		}
 		return out
 	}
-	x := governance.Execution{NetworkID: e.Config.NetworkID, Epoch: e.Config.Registry.Epoch, Height: fmt.Sprint(e.Height), Time: e.Time, Accounts: view(e.Accounts), PreviousAccounts: view(previous.Accounts), PreviousHeight: fmt.Sprint(previous.Height), Eligibility: e.adapters.Eligibility, Crypto: e.adapters.Voting, Effects: e.adapters.Effects, Authorize: e.Authorize, Emit: emit}
+	x := governance.Execution{NetworkID: e.Config.NetworkID, Epoch: e.Config.Registry.Epoch, Height: fmt.Sprint(e.Height), Time: e.Time, Accounts: view(e.Accounts), PreviousAccounts: view(previous.Accounts), PreviousHeight: fmt.Sprint(previous.Height), Eligibility: e.adapters.Eligibility, Crypto: e.adapters.Voting, Effects: e.adapters.Effects, Membership: e.adapters.Membership, Authorize: e.Authorize, Emit: emit}
 	if e.Config.Governance != nil {
 		x.Config = *e.Config.Governance
 	}
@@ -54,7 +54,55 @@ func (e *Engine) applyTransaction(tx Transaction, emit func(string, string), pos
 		return fmt.Errorf("ERR_EPOCH")
 	}
 	if strings.HasPrefix(b.Type, "account.") {
-		return e.applyAccount(tx)
+		if e.Eligibility != nil {
+			if err := e.Authorize(e.Config.Registry.Epoch, "eligibility.prove", e.Config.Eligibility.SuiteID, false); err != nil {
+				return err
+			}
+		}
+		before := e.Accounts[b.ActorID]
+		if err := e.applyAccount(tx); err != nil {
+			return err
+		}
+		if e.Eligibility == nil {
+			return nil
+		}
+		after := e.Accounts[b.ActorID]
+		switch b.Type {
+		case "account.register":
+			index := fmt.Sprint(e.Eligibility.Size)
+			if err := e.Eligibility.Append(after.Commitment); err != nil {
+				return err
+			}
+			after.EligibilityIndex = &index
+		case "account.rotate":
+			if before.Commitment != after.Commitment {
+				if before.EligibilityIndex == nil {
+					return fmt.Errorf("ERR_ELIGIBILITY_INDEX")
+				}
+				index, err := codec.Uint(*before.EligibilityIndex)
+				if err != nil {
+					return err
+				}
+				newIndex := fmt.Sprint(e.Eligibility.Size)
+				if err = e.Eligibility.Rotate(index, after.Commitment); err != nil {
+					return err
+				}
+				after.EligibilityIndex = &newIndex
+			}
+		case "account.retire":
+			if before.EligibilityIndex == nil {
+				return fmt.Errorf("ERR_ELIGIBILITY_INDEX")
+			}
+			index, err := codec.Uint(*before.EligibilityIndex)
+			if err != nil {
+				return err
+			}
+			if err = e.Eligibility.Update(index, "0"); err != nil {
+				return err
+			}
+		}
+		e.Accounts[b.ActorID] = after
+		return nil
 	}
 	if e.Governance == nil {
 		return fmt.Errorf("ERR_GOVERNANCE_DISABLED")

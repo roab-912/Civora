@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { governanceSchemas } from "./governance-schemas.mjs";
+import { eligibilitySchemas } from "./eligibility-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -230,6 +231,7 @@ const definitions = {
   revoked,
 };
 governanceSchemas(definitions, { object, list, ref, id, uint, constant });
+eligibilitySchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",
@@ -256,6 +258,10 @@ for (const key of [
   "fixture",
   "negative",
   "revoked",
+  "eligibility_snapshot",
+  "eligibility_path",
+  "membership_v03",
+  "membership_context",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

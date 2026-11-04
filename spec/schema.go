@@ -5,3 +5,8 @@ import "embed"
 
 //go:embed schemas/*.schema.json
 var Schemas embed.FS
+
+// Crypto contains pinned verifier material, never voter-supplied artifacts.
+//
+//go:embed crypto/*.json
+var Crypto embed.FS

@@ -1,0 +1,52 @@
+{
+  "sdk_version": "4.14.5",
+  "sdk_git_commit": "dbab5553c486a09d5e1042e5271e3316224cc176",
+  "sdk_source": "https://github.com/semaphore-protocol/semaphore/tree/v4.14.5",
+  "circuit_version": "4.13.0",
+  "lean_imt_version": "2.2.5",
+  "poseidon_lite_version": "0.3.0",
+  "depths": [
+    {
+      "depth": "16",
+      "wasm": {
+        "file": "16/semaphore.wasm",
+        "sha256": "06df31461d17db86897fc234f0e6e5f5e2f6add1b8c821b5c6ae75030b3e0d7c",
+        "size": "1843806",
+        "source": "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-16.wasm"
+      },
+      "zkey": {
+        "file": "16/semaphore.zkey",
+        "sha256": "948763c7315a337b7722c0344a28af4be66fbbc618474d6dbe9036e799d1a3b5",
+        "size": "3408199",
+        "source": "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-16.zkey"
+      },
+      "verification_key": {
+        "file": "spec/crypto/semaphore-16.verification-key.json",
+        "sha256": "c0fc89249ca42a2763ec4e521bf43bc8b3f35307258f6ddcaaed6047c189680e",
+        "size": "3744",
+        "source": "npm:@semaphore-protocol/proof@4.14.5/src/verification-keys.json"
+      }
+    },
+    {
+      "depth": "26",
+      "wasm": {
+        "file": "26/semaphore.wasm",
+        "sha256": "29031da511ac66be34f4d215eb836d45961e6ada73676056d60342c78bfe7224",
+        "size": "1853878",
+        "source": "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-26.wasm"
+      },
+      "zkey": {
+        "file": "26/semaphore.zkey",
+        "sha256": "8c358355090cd238acdd0b519004d84012f8b98a3c017c1926d93be9a0e8d401",
+        "size": "4595368",
+        "source": "https://snark-artifacts.pse.dev/semaphore/4.13.0/semaphore-26.zkey"
+      },
+      "verification_key": {
+        "file": "spec/crypto/semaphore-26.verification-key.json",
+        "sha256": "e3bfb30321d861fa67125150e7cf2fb8a6ef9cfe79a7af428b41e84d626b498d",
+        "size": "3743",
+        "source": "npm:@semaphore-protocol/proof@4.14.5/src/verification-keys.json"
+      }
+    }
+  ]
+}

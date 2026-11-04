@@ -309,6 +309,7 @@ type Execution struct {
 	Eligibility              ports.EligibilityProvider
 	Crypto                   ports.VotingCrypto
 	Effects                  ports.EffectAdapter
+	Membership               ports.MembershipVerifier
 	Authorize                func(epoch, operation, module string, historical bool) error
 	Emit                     func(kind, subject string)
 }

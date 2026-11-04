@@ -3,8 +3,10 @@ package core
 import (
 	"civora/internal/codec"
 	"civora/internal/effects"
+	"civora/internal/eligibility"
 	"civora/internal/governance"
 	"civora/internal/ports"
+	"civora/internal/semaphore"
 	"civora/internal/state"
 	"civora/internal/upgrade"
 	"crypto/ed25519"
@@ -20,13 +22,14 @@ const MaxTxBytes = 256 * 1024
 const MaxBlockBytes = 2 * 1024 * 1024
 
 type Config struct {
-	NetworkID     string             `json:"network_id"`
-	ChainID       string             `json:"chain_id"`
-	VotingProfile string             `json:"voting_profile"`
-	Mode          string             `json:"mode"`
-	Registry      upgrade.Registry   `json:"registry"`
-	Activations   []upgrade.Armed    `json:"activations"`
-	Governance    *governance.Config `json:"governance,omitempty"`
+	NetworkID     string              `json:"network_id"`
+	ChainID       string              `json:"chain_id"`
+	VotingProfile string              `json:"voting_profile"`
+	Mode          string              `json:"mode"`
+	Registry      upgrade.Registry    `json:"registry"`
+	Activations   []upgrade.Armed     `json:"activations"`
+	Governance    *governance.Config  `json:"governance,omitempty"`
+	Eligibility   *eligibility.Config `json:"eligibility,omitempty"`
 }
 type Payload struct {
 	SigningPK  string `json:"signing_pk"`
@@ -59,6 +62,7 @@ type Account struct {
 	RegisteredHeight string   `json:"registered_height"`
 	UsedKeys         []string `json:"used_keys"`
 	UsedCommitments  []string `json:"used_commitments"`
+	EligibilityIndex *string  `json:"eligibility_index,omitempty"`
 }
 type Block struct {
 	Height       string        `json:"height"`
@@ -89,12 +93,14 @@ type Engine struct {
 	upgrades       map[string]UpgradeState
 	Governance     *governance.State
 	adapters       Adapters
+	Eligibility    *eligibility.Tree
 }
 
 type Adapters struct {
 	Eligibility ports.EligibilityProvider
 	Voting      ports.VotingCrypto
 	Effects     ports.EffectAdapter
+	Membership  ports.MembershipVerifier
 	Profile     string
 }
 
@@ -122,6 +128,31 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 		adapters.Effects = effects.LedgerOnly{}
 	}
 	n.adapters = adapters
+	if c.Eligibility != nil {
+		depth, err := codec.Uint(c.Eligibility.CircuitDepth)
+		if err != nil || depth != 16 && depth != 26 {
+			return nil, fmt.Errorf("ERR_CIRCUIT_DEPTH")
+		}
+		if c.Eligibility.SuiteID != "semaphore-v4.14.5-depth-"+c.Eligibility.CircuitDepth {
+			return nil, fmt.Errorf("ERR_SUITE")
+		}
+		if err = c.Registry.Authorize(c.Registry.Epoch, "eligibility.prove", c.Eligibility.SuiteID, false); err != nil {
+			return nil, err
+		}
+		n.Eligibility, err = eligibility.New(uint8(depth))
+		if err != nil {
+			return nil, err
+		}
+		if n.adapters.Eligibility == nil {
+			n.adapters.Eligibility = eligibility.InlineProvider{}
+		}
+		if n.adapters.Membership == nil {
+			n.adapters.Membership, err = semaphore.New()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	if c.Governance != nil {
 		if c.Governance.CryptoProfile == "simulation_v0_2" && adapters.Profile != "simulation_v0_2" {
 			return nil, fmt.Errorf("ERR_SIMULATION_DISABLED")
@@ -159,13 +190,18 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 func (e *Engine) Snapshot() State {
 	height, tm := strconv.FormatUint(e.Height, 10), strconv.FormatUint(e.Time, 10)
 	network := struct {
-		Config     Config                   `json:"config"`
-		Height     string                   `json:"height"`
-		TimeMS     string                   `json:"time_ms"`
-		Governance *governance.NetworkState `json:"governance,omitempty"`
+		Config      Config                   `json:"config"`
+		Height      string                   `json:"height"`
+		TimeMS      string                   `json:"time_ms"`
+		Governance  *governance.NetworkState `json:"governance,omitempty"`
+		Eligibility *eligibility.Metadata    `json:"eligibility,omitempty"`
 	}{Config: e.Config, Height: height, TimeMS: tm}
 	if e.Governance != nil {
 		network.Governance = &e.Governance.Network
+	}
+	if e.Eligibility != nil {
+		meta := e.Eligibility.Metadata(e.Config.NetworkID, e.Config.Registry.Epoch, "accounts", e.Config.Eligibility.SuiteID, height)
+		network.Eligibility = &meta
 	}
 	entries := []state.Entry{{Table: "network", Key: "config", Value: network}}
 	for id, a := range e.Accounts {
@@ -176,6 +212,11 @@ func (e *Engine) Snapshot() State {
 	}
 	if e.Governance != nil {
 		entries = append(entries, e.Governance.Entries()...)
+	}
+	if e.Eligibility != nil {
+		for i, node := range e.Eligibility.Levels[0] {
+			entries = append(entries, state.Entry{Table: "eligibility", Key: strconv.Itoa(i), Value: node.String()})
+		}
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		a, b := entries[i], entries[j]
@@ -189,6 +230,9 @@ func (e *Engine) Snapshot() State {
 func (e *Engine) Root() string { return state.Root(e.Snapshot().Entries) }
 func (e *Engine) Clone() *Engine {
 	n := *e
+	if e.Eligibility != nil {
+		n.Eligibility = e.Eligibility.Clone()
+	}
 	n.Accounts = make(map[string]Account, len(e.Accounts))
 	for id, a := range e.Accounts {
 		a.UsedKeys = append([]string{}, a.UsedKeys...)

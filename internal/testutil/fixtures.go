@@ -3,6 +3,8 @@ package testutil
 import (
 	"civora/internal/codec"
 	"civora/internal/core"
+	"civora/internal/eligibility"
+	"civora/internal/upgrade"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -15,6 +17,15 @@ type Fixture struct {
 	Blocks         []core.Block   `json:"blocks"`
 	ExpectedRoots  []string       `json:"expected_roots"`
 	ExpectedEvents [][]core.Event `json:"expected_events"`
+}
+
+func WithEligibility(f Fixture, depth string) Fixture {
+	id := "semaphore-v4.14.5-depth-" + depth
+	m := upgrade.Module{ID: id, Status: "active", Operations: []string{"eligibility.prove"}, ImplementationSHA256: codec.Hash("test/eligibility-module", id), Artifacts: []string{}, Dependencies: []string{}, RetirementPolicy: "never_reactivate_revoked"}
+	m.Parameters.Format = id
+	f.Genesis.Registry.Modules = append(f.Genesis.Registry.Modules, m)
+	f.Genesis.Eligibility = &eligibility.Config{CircuitDepth: depth, SuiteID: id}
+	return f
 }
 
 func Root() string {

@@ -1,0 +1,6 @@
+.tools/
+node_modules/
+dist/
+.dev-store/
+coverage/
+*.test.exe

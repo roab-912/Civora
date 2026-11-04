@@ -1,0 +1,25 @@
+{
+  "profile": "development-only-v0.1",
+  "toolchain": {
+    "go_tested": "go1.27.3 windows/amd64",
+    "go_minimum": "1.26.0",
+    "node_tested": "24.12.0",
+    "npm_tested": "11.10.0"
+  },
+  "consensus_reserved_for_v0_5": {
+    "module": "github.com/cometbft/cometbft",
+    "version": "v0.38.17",
+    "commit": "d03254d3599b973f979314e6383b89fa1802e679",
+    "module_sum": "h1:FkrQNbAjiFqXydeAO81FUzriL4Bz0abYxN/eOHrQGOk=",
+    "go_mod_sum": "h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=",
+    "imported_in_v0_1": false
+  },
+  "dependencies": {
+    "go": "go.mod + go.sum",
+    "typescript": "package-lock.json"
+  },
+  "fixtures": {
+    "keys": "spec/fixtures/keys.TEST_ONLY.json",
+    "warning": "Public deterministic test secrets. Synthetic artifact digests. No release authority."
+  }
+}

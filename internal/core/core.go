@@ -1,0 +1,370 @@
+package core
+
+import (
+	"civora/internal/codec"
+	"civora/internal/state"
+	"civora/internal/upgrade"
+	"crypto/ed25519"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math/big"
+	"sort"
+	"strconv"
+)
+
+const MaxTxBytes = 256 * 1024
+const MaxBlockBytes = 2 * 1024 * 1024
+
+type Config struct {
+	NetworkID     string           `json:"network_id"`
+	ChainID       string           `json:"chain_id"`
+	VotingProfile string           `json:"voting_profile"`
+	Mode          string           `json:"mode"`
+	Registry      upgrade.Registry `json:"registry"`
+	Activations   []upgrade.Armed  `json:"activations"`
+}
+type Payload struct {
+	SigningPK  string `json:"signing_pk"`
+	RecoveryPK string `json:"recovery_pk"`
+	Commitment string `json:"commitment"`
+}
+type Body struct {
+	V         string          `json:"v"`
+	NetworkID string          `json:"network_id"`
+	Type      string          `json:"type"`
+	ActorID   string          `json:"actor_id"`
+	Nonce     string          `json:"nonce"`
+	Payload   json.RawMessage `json:"payload"`
+	Epoch     string          `json:"protocol_epoch,omitempty"`
+}
+type Auth struct {
+	Scheme    string `json:"scheme"`
+	Signature string `json:"signature"`
+}
+type Transaction struct {
+	Body Body `json:"body"`
+	Auth Auth `json:"auth"`
+}
+type Account struct {
+	SigningPK        string   `json:"signing_pk"`
+	RecoveryPK       string   `json:"recovery_pk"`
+	Commitment       string   `json:"commitment"`
+	NextNonce        string   `json:"next_nonce"`
+	Status           string   `json:"status"`
+	RegisteredHeight string   `json:"registered_height"`
+	UsedKeys         []string `json:"used_keys"`
+	UsedCommitments  []string `json:"used_commitments"`
+}
+type Block struct {
+	Height       string        `json:"height"`
+	TimeMS       string        `json:"time_ms"`
+	Transactions []Transaction `json:"transactions"`
+}
+type Event struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Subject string `json:"subject"`
+}
+type State struct {
+	Height  string        `json:"height"`
+	TimeMS  string        `json:"time_ms"`
+	Entries []state.Entry `json:"entries"`
+}
+type UpgradeState struct {
+	Plan     upgrade.Plan     `json:"plan"`
+	Instance upgrade.Instance `json:"instance"`
+	Status   string           `json:"status"`
+}
+type Engine struct {
+	Config         Config
+	Accounts       map[string]Account
+	Height         uint64
+	Time           uint64
+	SupportedEpoch uint64
+	upgrades       map[string]UpgradeState
+}
+
+func New(raw []byte, supportedEpoch uint64) (*Engine, error) {
+	var c Config
+	if e := codec.Decode(raw, "config", &c); e != nil {
+		return nil, e
+	}
+	chain, e := codec.ChainID(c.NetworkID)
+	if e != nil || chain != c.ChainID {
+		return nil, fmt.Errorf("invalid chain_id")
+	}
+	if e = c.Registry.Validate(); e != nil {
+		return nil, e
+	}
+	epoch, _ := codec.Uint(c.Registry.Epoch)
+	if epoch > supportedEpoch {
+		return nil, fmt.Errorf("ERR_UNSUPPORTED_EPOCH")
+	}
+	n := &Engine{Config: c, Accounts: map[string]Account{}, SupportedEpoch: supportedEpoch, upgrades: map[string]UpgradeState{}}
+	r := c.Registry
+	last := uint64(0)
+	for _, a := range c.Activations {
+		if e = a.CheckFixture(c.NetworkID, c.ChainID); e != nil {
+			return nil, e
+		}
+		h, _ := codec.Uint(a.Instance.Heights[0].Height)
+		if h <= last {
+			return nil, fmt.Errorf("activation order")
+		}
+		last = h
+		if r, e = r.Next(a.Plan); e != nil {
+			return nil, e
+		}
+		if _, ok := n.upgrades[a.PlanID]; ok {
+			return nil, fmt.Errorf("duplicate plan")
+		}
+		n.upgrades[a.PlanID] = UpgradeState{a.Plan, a.Instance, "armed"}
+	}
+	return n, nil
+}
+func (e *Engine) Snapshot() State {
+	height, tm := strconv.FormatUint(e.Height, 10), strconv.FormatUint(e.Time, 10)
+	network := struct {
+		Config Config `json:"config"`
+		Height string `json:"height"`
+		TimeMS string `json:"time_ms"`
+	}{e.Config, height, tm}
+	entries := []state.Entry{{Table: "network", Key: "config", Value: network}}
+	for id, a := range e.Accounts {
+		entries = append(entries, state.Entry{Table: "accounts", Key: id, Value: a})
+	}
+	for id, u := range e.upgrades {
+		entries = append(entries, state.Entry{Table: "upgrades", Key: id, Value: u})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		a, b := entries[i], entries[j]
+		if a.Table != b.Table {
+			return a.Table < b.Table
+		}
+		return a.Key < b.Key
+	})
+	return State{height, tm, entries}
+}
+func (e *Engine) Root() string { return state.Root(e.Snapshot().Entries) }
+func (e *Engine) Clone() *Engine {
+	n := *e
+	n.Accounts = make(map[string]Account, len(e.Accounts))
+	for id, a := range e.Accounts {
+		a.UsedKeys = append([]string{}, a.UsedKeys...)
+		a.UsedCommitments = append([]string{}, a.UsedCommitments...)
+		n.Accounts[id] = a
+	}
+	n.upgrades = make(map[string]UpgradeState, len(e.upgrades))
+	for id, u := range e.upgrades {
+		n.upgrades[id] = u
+	}
+	return &n
+}
+func TxID(b Body) string {
+	tag := "tx"
+	if b.V == "2" {
+		tag = "tx/2"
+	}
+	return codec.Hash(tag, b)
+}
+func (e *Engine) BeforeBlock(height string) error {
+	h, err := codec.Uint(height)
+	if err != nil {
+		return err
+	}
+	for _, a := range e.Config.Activations {
+		if a.At(h) {
+			to, _ := codec.Uint(a.Plan.ToEpoch)
+			if to > e.SupportedEpoch {
+				return fmt.Errorf("ERR_UNSUPPORTED_EPOCH")
+			}
+		}
+	}
+	return nil
+}
+func (e *Engine) Authorize(epoch, op, moduleID string, historical bool) error {
+	return e.Config.Registry.Authorize(epoch, op, moduleID, historical)
+}
+
+// Apply is transactional: any invalid transaction rejects the whole proposed
+// block. Neither events nor nonces escape the discarded candidate state.
+func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
+	if len(raw) > MaxBlockBytes {
+		return nil, nil, fmt.Errorf("ERR_SIZE")
+	}
+	var b Block
+	if err := codec.Decode(raw, "block", &b); err != nil {
+		return nil, nil, err
+	}
+	h, err := codec.Uint(b.Height)
+	if err != nil || e.Height == ^uint64(0) || h != e.Height+1 {
+		return nil, nil, fmt.Errorf("ERR_HEIGHT")
+	}
+	tm, err := codec.Uint(b.TimeMS)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = e.BeforeBlock(b.Height); err != nil {
+		return nil, nil, err
+	}
+	n := e.Clone()
+	n.Height = h
+	if tm > n.Time {
+		n.Time = tm
+	}
+	events := []Event{}
+	emit := func(kind, subject string) {
+		events = append(events, Event{codec.Hash("event", []any{n.Config.NetworkID, b.Height, strconv.Itoa(len(events))}), kind, subject})
+	}
+	for _, a := range n.Config.Activations {
+		if !a.At(h) {
+			continue
+		}
+		lo, _ := codec.Uint(a.Plan.Activation.NotBeforeMS)
+		hi, _ := codec.Uint(a.Instance.ExpiresAtMS)
+		armEnd, _ := codec.Uint(a.Instance.ArmWindowEndMS)
+		notice, _ := codec.Uint(a.Plan.Activation.NoticeMS)
+		if n.Time < lo || n.Time >= hi || armEnd > ^uint64(0)-notice || n.Time < armEnd+notice {
+			return nil, nil, fmt.Errorf("activation outside fixed window")
+		}
+		registry, err := n.Config.Registry.Next(a.Plan)
+		if err != nil {
+			return nil, nil, err
+		}
+		n.Config.Registry = registry
+		u := n.upgrades[a.PlanID]
+		u.Status = "activated"
+		n.upgrades[a.PlanID] = u
+		emit("protocol.activate", a.PlanID)
+	}
+	for _, tx := range b.Transactions {
+		if err := n.applyTransaction(tx); err != nil {
+			return nil, nil, err
+		}
+		emit(tx.Body.Type, tx.Body.ActorID)
+	}
+	return n, events, nil
+}
+func (e *Engine) CheckTx(raw []byte) error {
+	if len(raw) > MaxTxBytes {
+		return fmt.Errorf("ERR_SIZE")
+	}
+	var tx Transaction
+	if err := codec.Decode(raw, "transaction", &tx); err != nil {
+		return err
+	}
+	return e.Clone().applyTransaction(tx)
+}
+func (e *Engine) applyTransaction(tx Transaction) error {
+	if len(codec.Must(tx)) > MaxTxBytes {
+		return fmt.Errorf("ERR_SIZE")
+	}
+	b := tx.Body
+	if b.NetworkID != e.Config.NetworkID {
+		return fmt.Errorf("ERR_NETWORK")
+	}
+	if b.V != e.Config.Registry.TransactionVersion || b.V == "1" && e.Config.Registry.Epoch != "1" || b.V == "2" && b.Epoch != e.Config.Registry.Epoch {
+		return fmt.Errorf("ERR_EPOCH")
+	}
+	if _, err := e.Config.Registry.AccountSuite(); err != nil {
+		return err
+	}
+	nonce, err := codec.Uint(b.Nonce)
+	if err != nil {
+		return err
+	}
+	if nonce == ^uint64(0) {
+		return fmt.Errorf("ERR_NONCE_OVERFLOW")
+	}
+	var p Payload
+	if b.Type != "account.retire" {
+		if err = json.Unmarshal(b.Payload, &p); err != nil {
+			return err
+		}
+		q, _ := new(big.Int).SetString("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10)
+		v, ok := new(big.Int).SetString(p.Commitment, 10)
+		if !ok || v.Sign() <= 0 || v.Cmp(q) >= 0 {
+			return fmt.Errorf("ERR_COMMITMENT")
+		}
+		if p.SigningPK == p.RecoveryPK {
+			return fmt.Errorf("ERR_KEY_SEPARATION")
+		}
+	}
+	a, exists := e.Accounts[b.ActorID]
+	pk := a.RecoveryPK
+	if b.Type == "account.register" {
+		if exists || nonce != 0 || b.ActorID != codec.Hash("account", []any{b.NetworkID, p.SigningPK}) {
+			return fmt.Errorf("ERR_REGISTER")
+		}
+		active := 0
+		for _, a := range e.Accounts {
+			if a.Status == "active" {
+				active++
+			}
+		}
+		if len(e.Accounts) >= 131072 || active >= 65536 {
+			return fmt.Errorf("ERR_CAPACITY")
+		}
+		pk = p.SigningPK
+	} else {
+		if !exists || a.Status != "active" {
+			return fmt.Errorf("ERR_ACCOUNT")
+		}
+		if b.Nonce != a.NextNonce {
+			return fmt.Errorf("ERR_NONCE")
+		}
+	}
+	if b.Type != "account.retire" {
+		for id, other := range e.Accounts {
+			for _, k := range other.UsedKeys {
+				if id != b.ActorID && (k == p.SigningPK || k == p.RecoveryPK) {
+					return fmt.Errorf("ERR_KEY_IN_USE")
+				}
+			}
+			for _, c := range other.UsedCommitments {
+				if c == p.Commitment && (id != b.ActorID || c != a.Commitment) {
+					return fmt.Errorf("ERR_COMMITMENT_USED")
+				}
+			}
+		}
+	}
+	key, _ := hex.DecodeString(pk)
+	sig, _ := hex.DecodeString(tx.Auth.Signature)
+	digest, _ := hex.DecodeString(TxID(b))
+	if len(key) != ed25519.PublicKeySize || !ed25519.Verify(key, digest, sig) {
+		return fmt.Errorf("ERR_SIGNATURE")
+	}
+	if b.Type == "account.retire" {
+		a.Status = "retired"
+	} else {
+		if !exists {
+			a = Account{Status: "active", RegisteredHeight: strconv.FormatUint(e.Height, 10), UsedKeys: []string{}, UsedCommitments: []string{}}
+		}
+		a.SigningPK = p.SigningPK
+		a.RecoveryPK = p.RecoveryPK
+		a.Commitment = p.Commitment
+		for _, k := range []string{p.SigningPK, p.RecoveryPK} {
+			if !contains(a.UsedKeys, k) {
+				a.UsedKeys = append(a.UsedKeys, k)
+			}
+		}
+		if !contains(a.UsedCommitments, p.Commitment) {
+			a.UsedCommitments = append(a.UsedCommitments, p.Commitment)
+		}
+	}
+	a.NextNonce = strconv.FormatUint(nonce+1, 10)
+	if len(a.UsedKeys) > 262144 || len(a.UsedCommitments) > 262144 {
+		return fmt.Errorf("ERR_CAPACITY")
+	}
+	e.Accounts[b.ActorID] = a
+	return nil
+}
+func contains(ss []string, s string) bool {
+	for _, x := range ss {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}

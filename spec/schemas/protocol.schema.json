@@ -1,0 +1,1180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/v0.1/protocol",
+  "$defs": {
+    "uint": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,18}|18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4][0-9]{0})$"
+    },
+    "module": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "status": {
+          "enum": [
+            "prepared",
+            "active",
+            "legacy_verify_only",
+            "revoked"
+          ]
+        },
+        "operations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+          },
+          "maxItems": 32
+        },
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "format": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+            }
+          },
+          "required": [
+            "format"
+          ],
+          "additionalProperties": false
+        },
+        "implementation_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 32
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+          },
+          "maxItems": 32
+        },
+        "retirement_policy": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        }
+      },
+      "required": [
+        "id",
+        "status",
+        "operations",
+        "parameters",
+        "implementation_sha256",
+        "artifacts",
+        "dependencies",
+        "retirement_policy"
+      ],
+      "additionalProperties": false
+    },
+    "payload": {
+      "type": "object",
+      "properties": {
+        "signing_pk": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_pk": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "commitment": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,76}$"
+        }
+      },
+      "required": [
+        "signing_pk",
+        "recovery_pk",
+        "commitment"
+      ],
+      "additionalProperties": false
+    },
+    "armed": {
+      "type": "object",
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "plan": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/plan"
+        },
+        "instance_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "instance": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/instance"
+        },
+        "authorization": {
+          "const": "development_fixture"
+        }
+      },
+      "required": [
+        "plan_id",
+        "plan",
+        "instance_id",
+        "instance",
+        "authorization"
+      ],
+      "additionalProperties": false
+    },
+    "entry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "accounts"
+            },
+            "key": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/account"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "network"
+            },
+            "key": {
+              "const": "config"
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "config": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+                },
+                "height": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "time_ms": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "config",
+                "height",
+                "time_ms"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "upgrades"
+            },
+            "key": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "plan": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/plan"
+                },
+                "instance": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/instance"
+                },
+                "status": {
+                  "enum": [
+                    "armed",
+                    "activated"
+                  ]
+                }
+              },
+              "required": [
+                "plan",
+                "instance",
+                "status"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "type": {
+          "enum": [
+            "account.register",
+            "account.rotate",
+            "account.retire",
+            "protocol.activate"
+          ]
+        },
+        "subject": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "subject"
+      ],
+      "additionalProperties": false
+    },
+    "transaction": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.register"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/payload"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.rotate"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/payload"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "1"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.retire"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.register"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/payload"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.rotate"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/payload"
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "object",
+              "properties": {
+                "v": {
+                  "const": "2"
+                },
+                "network_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "type": {
+                  "const": "account.retire"
+                },
+                "actor_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "nonce": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {},
+                  "required": [],
+                  "additionalProperties": false
+                },
+                "protocol_epoch": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "v",
+                "network_id",
+                "type",
+                "actor_id",
+                "nonce",
+                "payload",
+                "protocol_epoch"
+              ],
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "const": "ed25519"
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{128}$"
+                }
+              },
+              "required": [
+                "scheme",
+                "signature"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "body",
+            "auth"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "chain_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+        },
+        "voting_profile": {
+          "const": "inline_dev"
+        },
+        "mode": {
+          "const": "development"
+        },
+        "registry": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/registry"
+        },
+        "activations": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/armed"
+          },
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "network_id",
+        "chain_id",
+        "voting_profile",
+        "mode",
+        "registry",
+        "activations"
+      ],
+      "additionalProperties": false
+    },
+    "registry": {
+      "type": "object",
+      "properties": {
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "state_schema": {
+          "const": "1"
+        },
+        "transaction_version": {
+          "enum": [
+            "1",
+            "2"
+          ]
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/module"
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "protocol_epoch",
+        "state_schema",
+        "transaction_version",
+        "modules"
+      ],
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "from_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "to_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "from_state_schema": {
+          "const": "1"
+        },
+        "to_state_schema": {
+          "const": "1"
+        },
+        "hash_suite": {
+          "const": "sha256"
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/module"
+          },
+          "maxItems": 64
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "target": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "size": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+              }
+            },
+            "required": [
+              "target",
+              "sha256",
+              "size"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 64
+        },
+        "provenance_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sbom_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reproducible_build_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "conformance_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+          },
+          "maxItems": 256
+        },
+        "activation": {
+          "type": "object",
+          "properties": {
+            "not_before_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "expires_at_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "notice_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "prerequisite": {
+              "const": "no_open_polls"
+            }
+          },
+          "required": [
+            "not_before_ms",
+            "expires_at_ms",
+            "notice_ms",
+            "prerequisite"
+          ],
+          "additionalProperties": false
+        },
+        "migration": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "const": "identity_v0_1"
+            },
+            "precondition_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "postcondition_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "replay_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "stop_point": {
+              "const": "before_activation_block"
+            },
+            "failure_procedure": {
+              "type": "string",
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "id",
+            "precondition_sha256",
+            "postcondition_sha256",
+            "replay_sha256",
+            "stop_point",
+            "failure_procedure"
+          ],
+          "additionalProperties": false
+        },
+        "on_call": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "public_notice": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "transaction_version": {
+          "enum": [
+            "1",
+            "2"
+          ]
+        }
+      },
+      "required": [
+        "network_id",
+        "from_epoch",
+        "to_epoch",
+        "from_state_schema",
+        "to_state_schema",
+        "hash_suite",
+        "modules",
+        "artifacts",
+        "provenance_sha256",
+        "sbom_sha256",
+        "reproducible_build_sha256",
+        "conformance_sha256",
+        "chains",
+        "activation",
+        "migration",
+        "on_call",
+        "public_notice",
+        "transaction_version"
+      ],
+      "additionalProperties": false
+    },
+    "instance": {
+      "type": "object",
+      "properties": {
+        "plan_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "heights": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "chain_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "height": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+              }
+            },
+            "required": [
+              "chain_id",
+              "height"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 256
+        },
+        "arm_window_start_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "arm_window_end_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "expires_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "plan_id",
+        "heights",
+        "arm_window_start_ms",
+        "arm_window_end_ms",
+        "expires_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "account": {
+      "type": "object",
+      "properties": {
+        "signing_pk": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_pk": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "commitment": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,76}$"
+        },
+        "next_nonce": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "status": {
+          "enum": [
+            "active",
+            "retired"
+          ]
+        },
+        "registered_height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "used_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 262144
+        },
+        "used_commitments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]{0,76}$"
+          },
+          "maxItems": 262144
+        }
+      },
+      "required": [
+        "signing_pk",
+        "recovery_pk",
+        "commitment",
+        "next_nonce",
+        "status",
+        "registered_height",
+        "used_keys",
+        "used_commitments"
+      ],
+      "additionalProperties": false
+    },
+    "block": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "time_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/transaction"
+          },
+          "maxItems": 8192
+        }
+      },
+      "required": [
+        "height",
+        "time_ms",
+        "transactions"
+      ],
+      "additionalProperties": false
+    },
+    "state": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "time_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/entry"
+          },
+          "maxItems": 131089
+        }
+      },
+      "required": [
+        "height",
+        "time_ms",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "commit": {
+      "type": "object",
+      "properties": {
+        "block": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/block"
+        },
+        "state": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/state"
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/event"
+          },
+          "maxItems": 8208
+        },
+        "app_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "block",
+        "state",
+        "events",
+        "app_hash"
+      ],
+      "additionalProperties": false
+    },
+    "fixture": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "genesis": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/block"
+          },
+          "maxItems": 1024
+        },
+        "expected_roots": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 1024
+        },
+        "expected_events": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/event"
+            },
+            "maxItems": 8208
+          },
+          "maxItems": 1024
+        }
+      },
+      "required": [
+        "name",
+        "genesis",
+        "blocks",
+        "expected_roots",
+        "expected_events"
+      ],
+      "additionalProperties": false
+    },
+    "negative": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "genesis": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+        },
+        "prefix_blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/block"
+          },
+          "maxItems": 1024
+        },
+        "rejected_block": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/block"
+        },
+        "expected_error": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "name",
+        "genesis",
+        "prefix_blocks",
+        "rejected_block",
+        "expected_error"
+      ],
+      "additionalProperties": false
+    },
+    "revoked": {
+      "type": "object",
+      "properties": {
+        "registry": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/registry"
+        },
+        "plan": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/plan"
+        },
+        "expected_error": {
+          "type": "string",
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "registry",
+        "plan",
+        "expected_error"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

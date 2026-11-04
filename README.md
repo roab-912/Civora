@@ -12,6 +12,18 @@ Elle exécute le scénario de gouvernance de **99 blocs**, puis vérifie les deu
 
 La partie gouvernance conserve le **simulateur de développement v0.2**, compilé seulement avec `civora_sim`, dans `civsim`, et refusé par `civnode`. Les preuves Semaphore v0.3 sont réelles. Le chiffrement et le dépouillement ElectionGuard restent à v0.4 : une preuve d’éligibilité seule ne permet pas de compter un vote. Aucune PWA ni réseau de consensus n’est démarré.
 
+La préparation **v0.4** ajoute les décodeurs stricts d’enveloppe ElectionGuard en Go et TypeScript, 59 vecteurs communs et une inspection d’archive locale. **Le jalon reste incomplet** : la sérialisation officielle 0.0.1 laisse le bulletin chiffré et d’autres structures à compléter ; le candidat Kotlin 2.0 consulté utilise surtout une sérialisation 1.9. Le mapping complet, le chiffrement, le dépouillement, les deux vérificateurs cryptographiques et la preuve d’indépendance restent à qualifier. La [décision et les pièces épinglées](spec/decisions/0009-electionguard-interop.md) précisent ce constat et les conditions de reprise. v0.5 n’est pas commencé.
+
+```sh
+npm run fixtures:electionguard:check
+npm run crypto:electionguard:review
+npm run artifacts:electionguard:fetch
+npm run crypto:electionguard:gate
+go run ./cmd/civcrypto inspect -kind ballot -in spec/fixtures/v0.4/ballot.envelope.json
+```
+
+La porte `crypto:electionguard:gate` termine volontairement avec le **code 2** tant que la suite est non qualifiée. Le téléchargement des cinq documents épinglés contrôle leur intégrité ; il ne qualifie pas le chiffrement. L’inspecteur affiche les empreintes et tailles, avec `cryptography_verified:false` et `suite_qualified:false`. Les exemples d’enveloppe sont des marqueurs `TEST_ONLY`, sans contenu ElectionGuard valide ; ils ne permettent aucun vote secret. L’[annexe](spec/interop/electionguard-v0.4.md) décrit la frontière exacte.
+
 Les empreintes des WASM, zkey et clés de vérification sont figées dans [le verrou Semaphore](spec/crypto/semaphore-v4.lock.json). Le SDK est fixé à **4.14.5**, avec ses circuits **4.13.0**. Les navigateurs contrôlent taille et SHA-256 avant chargement ; Go utilise les clés de vérification intégrées et contrôlées. Aucun votant ne choisit ses artefacts.
 
 Prérequis : Go ≥ 1.26 et Node ≥ 24.12, npm. Les versions et dépendances utilisées sont consignées dans [le verrou de développement](spec/profiles/development.lock.json), `go.sum` et `package-lock.json`.

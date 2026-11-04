@@ -19,7 +19,12 @@
     "fixtures:eligibility": "npm run build && node scripts/generate-eligibility-fixtures.mjs",
     "fixtures:eligibility:check": "npm run build && node scripts/generate-eligibility-fixtures.mjs --check",
     "test:browser": "npm run build && node scripts/test-eligibility-browsers.mjs",
-    "test:scale": "npm run build && node scripts/check-eligibility-scale.mjs"
+    "test:scale": "npm run build && node scripts/check-eligibility-scale.mjs",
+    "fixtures:electionguard": "npm run build && node scripts/generate-electionguard-fixtures.mjs",
+    "fixtures:electionguard:check": "npm run build && node scripts/generate-electionguard-fixtures.mjs --check",
+    "crypto:electionguard:review": "node scripts/review-electionguard.mjs",
+    "crypto:electionguard:gate": "node scripts/review-electionguard.mjs --require-qualified",
+    "artifacts:electionguard:fetch": "node scripts/review-electionguard.mjs --fetch --check-local"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

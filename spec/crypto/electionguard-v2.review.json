@@ -1,0 +1,46 @@
+{
+  "suite": "eg-2.0-civic-1",
+  "qualified": false,
+  "status": "blocked_interoperability",
+  "review_scope": "source_review_only_no_sdk_execution",
+  "design_version": "2.0.0",
+  "serialization_version": "0.0.1",
+  "candidate_commit": "194b9c788ccaecda8719c227bd41ce57a3b857be",
+  "artifacts": [
+    {
+      "file": "design-2.0.pdf",
+      "url": "https://github.com/microsoft/electionguard/releases/download/v2.0/EG_Spec_2_0.pdf",
+      "size": "781626",
+      "sha256": "826515343b7248e2110f3101271e1cb4330b256b84bf317e61a6570c8cd97dff"
+    },
+    {
+      "file": "serialization-0.0.1.pdf",
+      "url": "https://github.com/microsoft/electionguard/releases/download/v2.1/EG_2_0_data_serialization_spec_0_0_1.pdf",
+      "size": "354811",
+      "sha256": "ed292835b950e0a90c9d6ac7aba1d6a7b6cb71ad1b93198f0d9da413e57fae6f"
+    },
+    {
+      "file": "kotlin-README.md",
+      "url": "https://raw.githubusercontent.com/votingworks/electionguard-kotlin-multiplatform/194b9c788ccaecda8719c227bd41ce57a3b857be/README.md",
+      "size": "2719",
+      "sha256": "993ab2ad64e7e6028da384b7b4488e17f8925feea44fd650e766f07775253dd2"
+    },
+    {
+      "file": "kotlin-serialization-1.9.md",
+      "url": "https://raw.githubusercontent.com/votingworks/electionguard-kotlin-multiplatform/194b9c788ccaecda8719c227bd41ce57a3b857be/docs/JsonSerializationSpec1.9.md",
+      "size": "26003",
+      "sha256": "9b65c9695ad8173b95b6f9737d17e9c237086e7db6c66715c134592b20e53872"
+    },
+    {
+      "file": "kotlin-TestVectors.md",
+      "url": "https://raw.githubusercontent.com/votingworks/electionguard-kotlin-multiplatform/194b9c788ccaecda8719c227bd41ce57a3b857be/docs/TestVectors.md",
+      "size": "3913",
+      "sha256": "7868b998368a99f77a6fd1533c50cf936720e94ddf9bed82d5921e99f37b49e8"
+    }
+  ],
+  "blockers": [
+    "Serialization 0.0.1 sections 0.7.8 and 0.7.12 are TODO; section 0.7.11 is an unfinished example; no global tally serialization is specified.",
+    "The reviewed Kotlin 2.0 candidate explicitly uses mostly serialization 1.9; no Civic field mapping or conversion oracle is qualified.",
+    "No shared browser adapter, audited ephemeral selection nonce export, frozen compact transcript or independent complete Go/TypeScript crypto vectors have been qualified."
+  ]
+}

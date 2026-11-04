@@ -6097,6 +6097,82 @@
         "group_root"
       ],
       "additionalProperties": false
+    },
+    "eg_bundle": {
+      "type": "object",
+      "properties": {
+        "suite": {
+          "const": "eg-2.0-civic-1"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "enum": [
+                  "context.json",
+                  "guardians/01.json",
+                  "guardians/02.json",
+                  "guardians/03.json",
+                  "guardians/04.json",
+                  "guardians/05.json",
+                  "link.json",
+                  "manifest.json",
+                  "ballot.json",
+                  "tally.json"
+                ]
+              },
+              "bytes": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 87382,
+                "pattern": "^[A-Za-z0-9_-]+$"
+              }
+            },
+            "required": [
+              "path",
+              "bytes"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "suite",
+        "files"
+      ],
+      "additionalProperties": false
+    },
+    "eg_link": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "question_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "network_id",
+        "poll_id",
+        "proposal_id",
+        "question_digest"
+      ],
+      "additionalProperties": false
     }
   }
 }

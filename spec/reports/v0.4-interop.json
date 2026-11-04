@@ -1,0 +1,45 @@
+{
+  "milestone": "v0.4",
+  "status": "incomplete_interoperability_gate",
+  "suite_qualified": false,
+  "source_integrity": "five_pinned_artifacts_downloaded_and_sha256_verified",
+  "sdk_build_or_execution": "not_executed",
+  "implemented": [
+    "strict_independent_go_and_typescript_civic_envelope_decoders",
+    "exact_paths_base64url_jcs_resource_bounds_and_civic_ceremony_link",
+    "deterministic_envelope_only_cross_language_fixtures",
+    "offline_archive_envelope_inspection_without_crypto_validity_claim",
+    "explicit_qualification_gate_exit_2",
+    "unconfigured_engine_replay_stops_at_ceremony_without_state_change"
+  ],
+  "envelope_vectors": "59",
+  "envelope_vectors_accepted_only_as_transport": "3",
+  "envelope_vectors_rejected": "56",
+  "validation": {
+    "command": "scripts/check.ps1",
+    "result": "passed",
+    "typescript_tests_passed": "113",
+    "go_tests_and_vet": "passed_normal_and_civora_sim_builds",
+    "existing_replay_and_abrupt_death_scenarios": "passed_28_scenarios_with_historical_roots_unchanged",
+    "envelope_inspector": "ballot_and_ceremony_cli_executed_with_crypto_verified_false",
+    "source_gate_with_verified_artifacts": "exit_2_as_required",
+    "browser_and_10m_scale_tests_this_change": "not_rerun"
+  },
+  "pending_acceptance": [
+    "complete_field_mapping_and_pinned_existing_electionguard_2_0_adapter",
+    "fresh_distributed_guardian_ceremony_3_of_5_and_quorum_failures",
+    "yes_bit_encryption_and_missing_selection_rejection",
+    "independent_complete_go_and_typescript_crypto_verifiers",
+    "all_no_and_mixed_ballot_tallies_with_global_decryption_proof",
+    "tampering_false_total_and_foreign_aggregate_rejection",
+    "export_reverification_by_an_independent_operator",
+    "qualified_ephemeral_nonce_export_and_rfc8235_independence_transcript",
+    "real_semaphore_scale_binding_and_copy_under_another_nullifier_rejection",
+    "foreign_partition_and_stale_checkpoint_rejection",
+    "challenge_never_counted",
+    "frozen_compact_encoding_and_two_concordant_decoders",
+    "real_encrypted_ballot_replay_and_abrupt_process_death_scenarios"
+  ],
+  "prior_physical_mobile_browser_gate": "still_not_executed",
+  "next_milestone_started": false
+}

@@ -18,6 +18,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Semaphore lock verification failed' }
     & node scripts/generate-eligibility-fixtures.mjs --check
     if ($LASTEXITCODE -ne 0) { throw 'Eligibility SDK fixtures differ' }
+    & node scripts/generate-electionguard-fixtures.mjs --check
+    if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard envelope fixtures differ' }
+    & node scripts/review-electionguard.mjs
+    if ($LASTEXITCODE -ne 0) { throw 'ElectionGuard source review is inconsistent' }
     & $goExe test ./... -count=1 -timeout 120s
     if ($LASTEXITCODE -ne 0) { throw 'Go tests failed' }
     & $goExe vet ./...

@@ -49,11 +49,17 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Partition crypto fixtures differ' }
     & $goExe run ./cmd/civnet fixtures -check
     if ($LASTEXITCODE -ne 0) { throw 'Partition transport fixtures differ' }
+    & $goExe run -buildvcs=false ./cmd/civnode fixtures -check -certified
+    if ($LASTEXITCODE -ne 0) { throw 'Citizen archive fixtures differ' }
+    & node scripts/audit-citizen.mjs -input spec/fixtures/v0.6/record -manifest spec/fixtures/v0.6/network.json
+    if ($LASTEXITCODE -ne 0) { throw 'Independent TypeScript citizen audit failed' }
     $networkDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnet
     if ($LASTEXITCODE -ne 0 -or $networkDependencies -contains 'civora/internal/simulation') { throw 'Network node dependency isolation failed' }
     if (-not $SkipNetwork) {
         & node scripts/test-consensus.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Native CometBFT acceptance failed' }
+        & node scripts/test-citizen-native.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Native citizen host acceptance failed' }
     }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'

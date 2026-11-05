@@ -31,7 +31,7 @@ interface BlockID {
   hash: string;
   parts: Part;
 }
-interface Header {
+export interface Header {
   version: { block: string; app: string };
   chain_id: string;
   height: string;

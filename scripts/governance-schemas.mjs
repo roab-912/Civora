@@ -170,6 +170,7 @@ export function governanceSchemas(
       "tallying",
       "processing",
       "provisional",
+      "contested",
       "failed_certification",
       "adopted",
       "applied",

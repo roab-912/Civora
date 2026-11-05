@@ -120,7 +120,7 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 	if e = c.Registry.Validate(); e != nil {
 		return nil, e
 	}
-	if c.VotingProfile == "transport_dev_v0_5" && (c.Governance == nil || c.Governance.CryptoProfile != "electionguard_v0_4" || c.Eligibility == nil || c.Eligibility.CircuitDepth != "26") {
+	if (c.VotingProfile == "transport_dev_v0_5" || c.VotingProfile == "transport_dev_v0_6") && (c.Governance == nil || c.Governance.CryptoProfile != "electionguard_v0_4" || c.Eligibility == nil || c.Eligibility.CircuitDepth != "26") {
 		return nil, fmt.Errorf("ERR_PARTITION_PROFILE")
 	}
 	epoch, _ := codec.Uint(c.Registry.Epoch)

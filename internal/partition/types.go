@@ -22,10 +22,15 @@ type Frozen struct {
 	Lanes         []consensus.Trust          `json:"lanes"`
 	ArchiveKeys   []string                   `json:"archive_keys"`
 	EligibleCount string                     `json:"eligible_count"`
+	Audit         *AuditConfig               `json:"audit,omitempty"`
 }
 
 func (f Frozen) ID() string {
-	return codec.Hash("scale/open", []any{f.Context.NetworkID, f.Context.PollID, f.Context.Epoch, f.Context.Root, f.Context.Depth, f.Context.Partitions, f.ProposalID, f.GuardianIDs, f.Ceremony, f.Opens, f.Closes, f.SourceHeight, f.Lanes, f.ArchiveKeys, f.EligibleCount})
+	values := []any{f.Context.NetworkID, f.Context.PollID, f.Context.Epoch, f.Context.Root, f.Context.Depth, f.Context.Partitions, f.ProposalID, f.GuardianIDs, f.Ceremony, f.Opens, f.Closes, f.SourceHeight, f.Lanes, f.ArchiveKeys, f.EligibleCount}
+	if f.Audit != nil {
+		values = append(values, f.Audit)
+	}
+	return codec.Hash("scale/open", values)
 }
 func (f Frozen) Election() (*electionguard.Verifier, *electionguard.Election, error) {
 	v, e := electionguard.NewVerifier()
@@ -70,6 +75,16 @@ func (f Frozen) Validate(mainChain string) error {
 			return fmt.Errorf("archive role/key separation")
 		}
 		seen[k] = true
+	}
+	for k := range keys {
+		seen[k] = true
+	}
+	forbidden := []string{}
+	for k := range seen {
+		forbidden = append(forbidden, k)
+	}
+	if e := f.Audit.Validate(forbidden); e != nil {
+		return e
 	}
 	_, _, e := f.Election()
 	return e

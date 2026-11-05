@@ -14,30 +14,37 @@ import (
 	"sort"
 )
 
-// MainConfig explicitly selects the v0.5 transport development pilot. It does
-// not enable scale_1 certification or law effects from a partition tally.
+// MainConfig explicitly selects a transport development profile. v0.5 remains
+// provisional; v0.6 requires independent audits before certification/effects.
 type MainConfig struct {
 	Ledger      json.RawMessage   `json:"ledger"`
 	Lanes       []consensus.Trust `json:"lanes"`
 	ArchiveKeys []string          `json:"archive_keys"`
 	Depth       string            `json:"circuit_depth"`
 	Profile     string            `json:"profile"`
+	Audit       *AuditConfig      `json:"audit,omitempty"`
 }
 type Provisional struct {
-	Aggregate string `json:"aggregate"`
-	Count     string `json:"count"`
-	Yes       string `json:"yes"`
-	No        string `json:"no"`
-	State     string `json:"state"`
-	Tally     string `json:"decryption_record"`
+	Aggregate       string `json:"aggregate"`
+	Count           string `json:"count"`
+	Yes             string `json:"yes"`
+	No              string `json:"no"`
+	State           string `json:"state"`
+	Tally           string `json:"decryption_record"`
+	Dossier         string `json:"dossier_id,omitempty"`
+	PublishedMS     string `json:"published_ms,omitempty"`
+	PublishedHeight string `json:"published_height,omitempty"`
 }
 type Main struct {
-	Engine      *core.Engine
-	Config      MainConfig
-	Polls       map[string]Frozen
-	Checkpoints map[string]map[string]*Verified
-	Results     map[string]Provisional
-	events      []abci.Event
+	Engine       *core.Engine
+	Config       MainConfig
+	Polls        map[string]Frozen
+	Checkpoints  map[string]map[string]*Verified
+	Results      map[string]Provisional
+	events       []abci.Event
+	Attestations map[string]map[string]Attestation
+	Certificates map[string]Certification
+	Challenges   map[string]ChallengeRecord
 }
 
 func (m *Main) Events() []abci.Event { return m.events }
@@ -76,7 +83,7 @@ func NewMain(raw []byte, supported uint64) (*Main, error) {
 	if engine.Governance == nil || engine.Config.Governance.CryptoProfile != "electionguard_v0_4" {
 		return nil, fmt.Errorf("transport pilot requires real ElectionGuard governance")
 	}
-	if engine.Config.VotingProfile != "transport_dev_v0_5" || engine.Config.Eligibility.CircuitDepth != c.Depth {
+	if engine.Config.VotingProfile != c.Profile || engine.Config.Eligibility.CircuitDepth != c.Depth {
 		return nil, fmt.Errorf("transport profile/circuit mismatch")
 	}
 	p := len(c.Lanes)
@@ -100,7 +107,23 @@ func NewMain(raw []byte, supported uint64) (*Main, error) {
 			return nil, fmt.Errorf("archive/validator keys overlap")
 		}
 	}
-	return &Main{Engine: engine, Config: c, Polls: map[string]Frozen{}, Checkpoints: map[string]map[string]*Verified{}, Results: map[string]Provisional{}}, nil
+	forbidden := append([]string{}, c.ArchiveKeys...)
+	for k := range seen {
+		forbidden = append(forbidden, k)
+	}
+	for _, g := range engine.Config.Governance.Guardians {
+		forbidden = append(forbidden, g.SigningPK)
+	}
+	if e = c.Audit.Validate(forbidden); e != nil {
+		return nil, e
+	}
+	if c.Profile == "transport_dev_v0_6" && c.Audit == nil {
+		return nil, fmt.Errorf("audit configuration required")
+	}
+	if c.Profile == "transport_dev_v0_5" && c.Audit != nil {
+		return nil, fmt.Errorf("audit requires the v0.6 profile")
+	}
+	return &Main{Engine: engine, Config: c, Polls: map[string]Frozen{}, Checkpoints: map[string]map[string]*Verified{}, Results: map[string]Provisional{}, Attestations: map[string]map[string]Attestation{}, Certificates: map[string]Certification{}, Challenges: map[string]ChallengeRecord{}}, nil
 }
 func (m *Main) Height() uint64 { return m.Engine.Height }
 func (m *Main) Time() uint64   { return m.Engine.Time }
@@ -117,6 +140,17 @@ func (m *Main) Entries() []state.Entry {
 	}
 	for id, r := range m.Results {
 		entries = append(entries, state.Entry{Table: "transport_results", Key: id, Value: r})
+	}
+	for poll, attestations := range m.Attestations {
+		for key, a := range attestations {
+			entries = append(entries, state.Entry{Table: "poll_audit_attestations", Key: []any{poll, key}, Value: a})
+		}
+	}
+	for id, c := range m.Certificates {
+		entries = append(entries, state.Entry{Table: "poll_certificates", Key: id, Value: c})
+	}
+	for id, c := range m.Challenges {
+		entries = append(entries, state.Entry{Table: "poll_challenges", Key: id, Value: c})
 	}
 	sort.Slice(entries, func(i, j int) bool {
 		return string(codec.Must([]any{entries[i].Table, entries[i].Key})) < string(codec.Must([]any{entries[j].Table, entries[j].Key}))
@@ -146,6 +180,9 @@ func (m *Main) clone() *Main {
 	_ = json.Unmarshal(codec.Must(m.Polls), &n.Polls)
 	_ = json.Unmarshal(codec.Must(m.Checkpoints), &n.Checkpoints)
 	_ = json.Unmarshal(codec.Must(m.Results), &n.Results)
+	_ = json.Unmarshal(codec.Must(m.Attestations), &n.Attestations)
+	_ = json.Unmarshal(codec.Must(m.Certificates), &n.Certificates)
+	_ = json.Unmarshal(codec.Must(m.Challenges), &n.Challenges)
 	return n
 }
 func (m *Main) Check(raw []byte) error {
@@ -155,7 +192,7 @@ func (m *Main) Check(raw []byte) error {
 	if e := json.Unmarshal(raw, &shape); e != nil {
 		return e
 	}
-	if shape.Type == "lane.checkpoint" || shape.Type == "partition.tally" {
+	if shape.Type == "lane.checkpoint" || shape.Type == "partition.tally" || shape.Type == "audit.attest" || shape.Type == "audit.challenge" {
 		var c Command
 		if e := codec.Decode(raw, "coordinator_tx", &c); e != nil {
 			return e
@@ -200,7 +237,7 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 		if e = json.Unmarshal(raw, &shape); e != nil {
 			return nil, e
 		}
-		if shape.Type == "lane.checkpoint" || shape.Type == "partition.tally" {
+		if shape.Type == "lane.checkpoint" || shape.Type == "partition.tally" || shape.Type == "audit.attest" || shape.Type == "audit.challenge" {
 			var c Command
 			if e = codec.Decode(raw, "coordinator_tx", &c); e != nil {
 				return nil, e
@@ -221,12 +258,38 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 	if len(commands) > 32 {
 		return nil, fmt.Errorf("checkpoint budget")
 	}
-	next, events, e := m.Engine.Apply(codec.Must(ledger))
+	challengeEvents := []abci.Event{}
+	challengeCount := 0
+	for _, c := range commands {
+		if c.Type != "audit.challenge" {
+			continue
+		}
+		challengeCount++
+		if challengeCount > 4 {
+			return nil, fmt.Errorf("challenge crypto budget")
+		}
+		var proof Challenge
+		if e = json.Unmarshal(c.Value, &proof); e != nil {
+			return nil, e
+		}
+		if e = n.challenge(proof, b.Height, b.TimeMS); e != nil {
+			return nil, e
+		}
+	}
+	challengeEvents = append(challengeEvents, n.events...)
+	next, events, e := n.Engine.Apply(codec.Must(ledger))
 	if e != nil {
 		return nil, e
 	}
 	n.Engine = next
-	n.events = consensus.CivicEvents(events)
+	for i := range challengeEvents {
+		for j := range challengeEvents[i].Attributes {
+			if challengeEvents[i].Attributes[j].Key == "height" {
+				challengeEvents[i].Attributes[j].Value = b.Height
+			}
+		}
+	}
+	n.events = append(challengeEvents, consensus.CivicEvents(events)...)
 	for id, r := range n.Results {
 		if n.Engine.Governance.Polls[id].State == "failed_certification" {
 			r.State = "failed_certification"
@@ -253,6 +316,8 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 		sort.Strings(guardians)
 		f := Frozen{Context: electionguard.ScaleContext{NetworkID: n.Engine.Config.NetworkID, PollID: id, Epoch: poll.ProtocolEpoch, Root: *poll.GroupRoot, Depth: n.Config.Depth, Partitions: fmt.Sprint(len(n.Config.Lanes))}, ProposalID: poll.ProposalID, GuardianIDs: guardians, Ceremony: *poll.CeremonyBundle, Opens: *poll.OpensAtMS, Closes: *poll.ClosesAtMS, SourceHeight: b.Height, Lanes: n.Config.Lanes, ArchiveKeys: n.Config.ArchiveKeys, EligibleCount: poll.EligibleCount}
 		f.Context.Checkpoint = f.ID()
+		f.Audit = n.Config.Audit
+		f.Context.Checkpoint = f.ID()
 		if e = f.Validate(n.Engine.Config.ChainID); e != nil {
 			return nil, e
 		}
@@ -261,14 +326,32 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 		n.Checkpoints[id] = map[string]*Verified{}
 	}
 	for _, c := range commands {
+		if c.Type == "audit.challenge" {
+			continue
+		}
 		if e = n.command(c); e != nil {
 			return nil, e
 		}
+	}
+	if e = n.advanceCertification(); e != nil {
+		return nil, e
 	}
 	return n, nil
 }
 func (m *Main) command(c Command) error {
 	switch c.Type {
+	case "audit.challenge":
+		var proof Challenge
+		if e := json.Unmarshal(c.Value, &proof); e != nil {
+			return e
+		}
+		return m.challenge(proof, fmt.Sprint(m.Height()), fmt.Sprint(m.Time()))
+	case "audit.attest":
+		var a Attestation
+		if e := json.Unmarshal(c.Value, &a); e != nil {
+			return e
+		}
+		return m.attest(a)
 	case "lane.checkpoint":
 		var cp Checkpoint
 		if e := json.Unmarshal(c.Value, &cp); e != nil {
@@ -319,7 +402,11 @@ func (m *Main) command(c Command) error {
 			if e = m.Engine.Governance.StagePartitionResult(m.Engine.Config.NetworkID, req.PollID, aggregate, count, m.Time()); e != nil {
 				return e
 			}
-			m.Results[req.PollID] = Provisional{aggregate, "0", "0", "0", "provisional", ""}
+			r := Provisional{Aggregate: aggregate, Count: "0", Yes: "0", No: "0", State: "provisional", Tally: ""}
+			if e = m.publish(f, &r); e != nil {
+				return e
+			}
+			m.Results[req.PollID] = r
 			m.emit("poll.provisional", req.PollID)
 			return nil
 		}
@@ -338,7 +425,11 @@ func (m *Main) command(c Command) error {
 		if e = m.Engine.Governance.StagePartitionResult(m.Engine.Config.NetworkID, req.PollID, aggregate, count, m.Time()); e != nil {
 			return e
 		}
-		m.Results[req.PollID] = Provisional{aggregate, count, yes, no, "provisional", req.Tally}
+		r := Provisional{Aggregate: aggregate, Count: count, Yes: yes, No: no, State: "provisional", Tally: req.Tally}
+		if e = m.publish(f, &r); e != nil {
+			return e
+		}
+		m.Results[req.PollID] = r
 		m.emit("poll.provisional", req.PollID)
 		return nil
 	}

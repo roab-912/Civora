@@ -1,5 +1,16 @@
 {
-  "profile": "development-v0.5-with-v0.1-v0.2-v0.3-v0.4-replay",
+  "profile": "development-v0.6-with-v0.1-v0.2-v0.3-v0.4-v0.5-replay",
+  "citizen_v0_6": {
+    "profile": "transport_dev_v0_6",
+    "mode": "archive",
+    "manifest": "spec/fixtures/v0.6/network.json",
+    "fixture": "spec/fixtures/v0.6/archive.json",
+    "public_record": "spec/fixtures/v0.6/record",
+    "audit_quorum": "3/5 keys and two verifier implementations",
+    "challenge_window_ms": "1800000",
+    "audit_deadline_ms_after_close": "172800000",
+    "public_pilot_qualified": false
+  },
   "toolchain": {
     "go_tested": "go1.27.3 windows/amd64",
     "go_minimum": "1.26.0",

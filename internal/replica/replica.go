@@ -43,6 +43,7 @@ type Journal struct {
 	Machine   Machine
 	Last      *Record
 	Hook      func(string)
+	factory   func() (Machine, error)
 }
 
 func Open(directory string, genesis []byte, factory func() (Machine, error)) (*Journal, error) {
@@ -64,7 +65,7 @@ func Open(directory string, genesis []byte, factory func() (Machine, error)) (*J
 	} else if !bytes.Equal(saved, genesis) {
 		return nil, fmt.Errorf("consensus genesis mismatch")
 	}
-	j := &Journal{directory: directory, Machine: m}
+	j := &Journal{directory: directory, Machine: m, factory: factory}
 	paths, e := filepath.Glob(filepath.Join(directory, "*.record.json"))
 	if e != nil {
 		return nil, e
@@ -147,4 +148,10 @@ func write(directory, path string, data []byte, hook func(string)) error {
 	}
 	call("after_rename")
 	return syncDirectory(directory)
+}
+
+// Persist is also used for content-addressed public archives. Callers validate
+// paths, hold their writer lock, and never use it to replace signer state.
+func Persist(directory, path string, data []byte, hook func(string)) error {
+	return write(directory, path, data, hook)
 }

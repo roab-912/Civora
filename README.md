@@ -1,6 +1,35 @@
-# Civora — réseau de développement v0.5
+# Civora — hôte citoyen de développement v0.6
 
-Implémentation de développement des jalons v0.1 à v0.5 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+Implémentation de développement des jalons v0.1 à v0.6 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+
+Pour lancer l'hôte citoyen avec deux archives locales et une réplique anonyme du registre et de la partition 0 :
+
+```powershell
+.\scripts\citizen.ps1
+# Ou lancer, vérifier le rejeu et l'export, puis arrêter les processus :
+.\scripts\citizen.ps1 -Check
+```
+
+API de l'observateur : **http://127.0.0.1:8788/v1/network**. `Ctrl+C` conserve les archives dans `.dev-host`. La démonstration emploie de vrais chiffrés et preuves, des clés **PUBLIC_TEST_ONLY** et des commits synthétiques liés. Elle ne constitue pas un réseau de production. Les reçus distinguent dépôt répliqué et comptage ; le dossier sélectif est revérifié séparément en Go et TypeScript. La fixture certifiée compte **3 Oui et 2 Non**, attend la fenêtre d'audit puis applique la loi.
+
+Les interfaces v0.6 sont utilisables directement avec un manifeste authentifié :
+
+```sh
+go build -o .tools/civnode.exe ./cmd/civnode
+.tools/civnode.exe init --home .dev-host/operator --manifest network.json --genesis genesis.json
+.tools/civnode.exe start --home .dev-host/operator --mode archive --lanes 0
+.tools/civnode.exe status --home .dev-host/operator
+.tools/civnode.exe verify --home .dev-host/operator --from genesis
+.tools/civnode.exe election export --home .dev-host/operator --poll-id ID --output election-record
+.tools/civnode.exe election verify --home .dev-host/operator --input election-record
+npm run audit:citizen -- -input election-record -manifest network.json
+```
+
+`start` utilise CometBFT/P2P par défaut. `--transport http` utilise les archives signées du manifeste ; les adresses P2P de la fixture figée sont des exemples. L'hôte public ne nécessite aucun compte ni clé privée de consensus. Une fois arrêté, `status` et `verify` peuvent relire l'archive locale hors ligne et signalent son caractère périmé. Les origines du manifeste doivent correspondre au réseau effectivement lancé.
+
+Les services d'archive et les travailleurs de relais sont documentés dans la [décision 0012](spec/decisions/0012-citizen-v0.6.md). Pour le développement, une archive reçoit explicitement `--archive-key chemin/archive-N.TEST_ONLY.json` ; un relais reçoit `--archives http://archive-a,http://archive-b,http://archive-c`. Les clés d'audit restent séparées. La certification exige **3/5 auditeurs et les deux implémentations**, trente minutes de contestation et la clôture du dossier sous 48 heures. Les clés publiques de test, la publication de binaires, le déploiement, l'outillage d'urgence et la qualification à dix millions restent hors du pilote public.
+
+Contrôle complet : `./scripts/check.ps1`. Test natif v0.6 seul : `npm run test:citizen:native` (quatorze validateurs locaux et un observateur, arrêt brutal/reprise). Vérification des fixtures : `go run ./cmd/civnode fixtures -check -certified`. Le [rapport v0.6](spec/reports/v0.6-citizen.json) consigne les résultats et limites, dont l'arrêt gracieux natif restant à qualifier. Les choix de preuve **état H/en-tête H+1**, d'ordre des sœurs et de confiance initiale sont consignés dans la décision 0012.
 
 Pour lancer sept nœuds locaux depuis PowerShell :
 

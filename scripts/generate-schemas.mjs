@@ -3,6 +3,7 @@ import { governanceSchemas } from "./governance-schemas.mjs";
 import { eligibilitySchemas } from "./eligibility-schemas.mjs";
 import { electionguardSchemas } from "./electionguard-schemas.mjs";
 import { consensusSchemas } from "./consensus-schemas.mjs";
+import { citizenSchemas } from "./citizen-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -112,7 +113,9 @@ const armed = object({
 const config = object({
   network_id: id,
   chain_id: name,
-  voting_profile: { enum: ["inline_dev", "transport_dev_v0_5"] },
+  voting_profile: {
+    enum: ["inline_dev", "transport_dev_v0_5", "transport_dev_v0_6"],
+  },
   mode: constant("development"),
   registry: ref("registry"),
   activations: list(ref("armed"), 16),
@@ -236,6 +239,7 @@ governanceSchemas(definitions, { object, list, ref, id, uint, constant });
 eligibilitySchemas(definitions, { object, list, ref, id, uint, constant });
 electionguardSchemas(definitions, { object, list, ref, id, uint, constant });
 consensusSchemas(definitions, { object, list, ref, id, uint, constant });
+citizenSchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",
@@ -298,6 +302,26 @@ for (const key of [
   "coordinator_tx",
   "partition_receipt",
   "consensus_rotation",
+  "archive_ref",
+  "archive_block",
+  "citizen_manifest",
+  "state_witness",
+  "citizen_state_proof",
+  "citizen_error",
+  "citizen_cursor",
+  "citizen_listener",
+  "audit_config",
+  "audit_attestation",
+  "partition_provisional",
+  "audit_certification",
+  "citizen_election_record",
+  "citizen_record_index",
+  "citizen_test_key",
+  "audit_challenge",
+  "audit_evidence",
+  "citizen_archive_request",
+  "citizen_relay_job",
+  "archive_signature",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

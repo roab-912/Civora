@@ -30,6 +30,16 @@ type Application struct {
 
 var _ abci.Application = (*Application)(nil)
 
+// ReadDurable serializes reads against Commit; the callback must not mutate.
+func (a *Application) ReadDurable(fn func(*replica.Journal) error) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.poisoned {
+		return fmt.Errorf("restart required")
+	}
+	return fn(a.journal)
+}
+
 func New(j *replica.Journal, chain string, appState []byte) *Application {
 	return &Application{journal: j, chain: chain, genesis: append([]byte{}, appState...)}
 }

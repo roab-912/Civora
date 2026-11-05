@@ -1,0 +1,96 @@
+{
+  "milestone": "v0.6",
+  "date": "2026-11-05",
+  "status": "implemented_development",
+  "public_pilot_qualified": false,
+  "profile": "transport_dev_v0_6",
+  "keys": "PUBLIC_TEST_ONLY",
+  "decision": "spec/decisions/0012-citizen-v0.6.md",
+  "toolchain": {
+    "go": "go1.27.3 windows/amd64",
+    "node": "24.12.0",
+    "cometbft": "v0.38.26"
+  },
+  "verification": {
+    "scripts/check.ps1": "passed",
+    "typescript_tests": 126,
+    "go_tests": "./... and -tags civora_sim ./... passed",
+    "go_vet": "normal and civora_sim passed",
+    "schema_generation_and_formatting": "passed",
+    "v0_1_through_v0_5_replay_and_fixture_regressions": "passed",
+    "scripts/citizen.ps1 -Check": "passed",
+    "offline_genesis_replay_after_stopping_sources_and_observer": "passed"
+  },
+  "acceptance": {
+    "native_main_and_partition": {
+      "validator_processes": 14,
+      "observer_processes": 1,
+      "has_civic_account": false,
+      "has_consensus_private_key": false,
+      "p2p_sync": "passed",
+      "typescript_native_historical_absence_proof": "passed",
+      "abrupt_observer_exit_restart_index_rebuild": "passed",
+      "command": "npm run test:citizen:native",
+      "local_evidence": ".tools/acceptance/citizen-10c233cd-46c5-46f3-92dc-c07e48b02450/report.json"
+    },
+    "independent_http_paths": {
+      "source_processes_in_demo": 2,
+      "independent_indexes_and_cas_in_tests": true,
+      "corrupt_or_unavailable_primary_falls_back": "passed",
+      "resumable_download_and_full_digest_verification": "passed",
+      "relay_restart_and_duplicate_original_receipt": "passed",
+      "two_archive_signatures_refused_three_persisted_archives_accepted": "passed"
+    },
+    "historical_api": {
+      "presence_absence_leaf_to_root": "passed",
+      "state_h_authenticated_by_header_h_plus_1": "passed",
+      "native_transaction_inclusion_in_header_h": "passed",
+      "snapshot_pagination_and_410_expiry": "passed",
+      "semaphore_path_from_frozen_group": "passed",
+      "offline_index_reconstruction": "passed"
+    },
+    "archive_crash_boundaries": [
+      "partial_write",
+      "after_sync",
+      "after_rename"
+    ],
+    "audit_and_effect": {
+      "go_and_typescript_recompute_entire_selective_record": "passed",
+      "missing_batch_or_empty_lane_refused": "passed",
+      "untrusted_genesis_and_corrupt_objects_refused": "passed",
+      "two_auditors_or_only_one_implementation_cannot_certify": "passed",
+      "certification_before_30_minutes_refused": "passed",
+      "48_hour_expiry_without_qualification": "passed",
+      "valid_challenge_before_due_effect": "passed",
+      "false_challenge_failure_is_atomic": "passed"
+    }
+  },
+  "reproducible_record": {
+    "directory": "spec/fixtures/v0.6/record",
+    "fixture_label": "PUBLIC_TEST_ONLY_REAL_CRYPTO_SYNTHETIC_LINKED_NATIVE_COMMITS",
+    "main_blocks": "15",
+    "lanes": "8",
+    "blocks_per_lane": "6",
+    "admitted": "6",
+    "counted": "5",
+    "yes": "3",
+    "no": "2",
+    "state": "certified",
+    "law_state": "applied",
+    "as_of_height": "14",
+    "dossier_id": "68b715384c3c5806959f8c17b82723a2f811af2472bde6a30d2cdec4d3cff0b6",
+    "main_final_app_hash": "1f75f620c7c6a38044e1e9f64f47060d991677a6e653f0ea2209cfe9a71b270b",
+    "lane_0_final_app_hash": "a81575fa82fc4cc774caf810dc7ffe150d9b5a1d0197e9dd2f53111c55b4e2f4",
+    "audit_implementations": ["civic-go-v0.6", "civic-typescript-v0.6"],
+    "reproduction_check": "go run ./cmd/civnode fixtures -check -certified"
+  },
+  "limits": [
+    "Development keys are public; synthetic linked archive commits are distinct from the live native process tests.",
+    "HTTP replay authenticates commits, block links, application execution and AppHash; complete native consensus validation, including BFT time, is performed by CometBFT in P2P mode.",
+    "Selective reports are historical and state their as_of_height; they do not establish freshness without another authenticated source.",
+    "Bounded valid_omitted challenges cover cryptographically valid envelopes marked invalid; ambiguous duplicate classification requires full replay and prevents attestations on a mismatch.",
+    "Distinct local processes demonstrate path failover, not organizational independence or WAN diversity.",
+    "Native acceptance uses process isolation and forced exits. An exploratory multiple-node in-process shutdown exposed a CometBFT LevelDB closure race; graceful native shutdown remains a separate qualification item.",
+    "Archive mode only; pruning, public distribution, OCI, deployment, emergency tooling, PWA and ten-million-voter qualification are outside this milestone."
+  ]
+}

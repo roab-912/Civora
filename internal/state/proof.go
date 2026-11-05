@@ -15,7 +15,11 @@ type Proof struct {
 }
 
 func Prove(entries []Entry, table string, key any) (Proof, error) {
+	return prove(entries, table, key, false)
+}
+func prove(entries []Entry, table string, key any, allowAbsent bool) (Proof, error) {
 	p := Proof{Siblings: []string{}}
+	p.Entry = Entry{Table: table, Key: key, Value: nil}
 	target := codec.Hash("state/key", []any{table, key})
 	kb, _ := hex.DecodeString(target)
 	found := false
@@ -25,7 +29,7 @@ func Prove(entries []Entry, table string, key any) (Proof, error) {
 			found = true
 		}
 	}
-	if !found {
+	if !found && !allowAbsent {
 		return p, fmt.Errorf("state entry absent")
 	}
 	current := append([]Entry{}, entries...)

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/v0.1/citizen_relay_job",
+  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/citizen_relay_job"
+}

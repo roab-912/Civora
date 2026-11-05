@@ -164,6 +164,13 @@ func ApplicationChain(g Genesis) (string, error) {
 	return c.Chain, nil
 }
 func Machine(g Genesis, epoch uint64) (replica.Machine, error) {
+	chain, e := ApplicationChain(g)
+	if e != nil {
+		return nil, e
+	}
+	return MachineWithTrust(g, epoch, Trust(chain))
+}
+func MachineWithTrust(g Genesis, epoch uint64, initial consensus.Trust) (replica.Machine, error) {
 	if epoch < 1 || epoch > 2 {
 		return nil, fmt.Errorf("implemented epoch capability is 1 or 2")
 	}
@@ -175,7 +182,22 @@ func Machine(g Genesis, epoch uint64) (replica.Machine, error) {
 	if e != nil {
 		return nil, e
 	}
-	return consensus.WithRotations(base, Trust(chain), g.Rotations)
+	if initial.ChainID != chain {
+		return nil, fmt.Errorf("native/application chain mismatch")
+	}
+	if main, ok := base.(*partition.Main); ok && main.Config.Audit != nil {
+		keys := append([]string{}, initial.Keys...)
+		for _, r := range g.Rotations {
+			keys = append(keys, r.Keys...)
+			for _, guardian := range r.Guardians {
+				keys = append(keys, guardian.SigningPK)
+			}
+		}
+		if e = main.Config.Audit.Validate(keys); e != nil {
+			return nil, e
+		}
+	}
+	return consensus.WithRotations(base, initial, g.Rotations)
 }
 func Start(home string, epoch uint64, logger log.Logger) (*node.Node, func(), error) {
 	return StartWithSigner(home, epoch, 0, logger)

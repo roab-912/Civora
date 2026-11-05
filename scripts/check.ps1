@@ -1,4 +1,4 @@
-param([switch]$Browsers,[switch]$Scale)
+param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $projectRoot
@@ -45,6 +45,16 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Eligibility account fixture differs' }
     & $goExe run ./cmd/civcrypto fixtures -check
     if ($LASTEXITCODE -ne 0) { throw 'Encrypted replay fixtures differ' }
+    & node scripts/generate-partition-ballots.mjs --check
+    if ($LASTEXITCODE -ne 0) { throw 'Partition crypto fixtures differ' }
+    & $goExe run ./cmd/civnet fixtures -check
+    if ($LASTEXITCODE -ne 0) { throw 'Partition transport fixtures differ' }
+    $networkDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnet
+    if ($LASTEXITCODE -ne 0 -or $networkDependencies -contains 'civora/internal/simulation') { throw 'Network node dependency isolation failed' }
+    if (-not $SkipNetwork) {
+        & node scripts/test-consensus.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Native CometBFT acceptance failed' }
+    }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'
     $activationStore = Join-Path $runDirectory 'activation'

@@ -1,0 +1,100 @@
+{
+  "milestone": "v0.5",
+  "date": "2026-11-05",
+  "status": "development_acceptance_passed",
+  "public_pilot_qualified": false,
+  "profile": "transport_dev_v0_5",
+  "consensus": {
+    "module": "github.com/cometbft/cometbft",
+    "version": "v0.38.26",
+    "validators": "7 equal-weight",
+    "quorum": "5",
+    "validator_update_delay": "H+2",
+    "native_signature_rules": "ZIP-215",
+    "typescript_package": "@noble/curves-comet = npm:@noble/curves@2.4.0"
+  },
+  "validation": {
+    "full_check": {
+      "command": "scripts/check.ps1",
+      "result": "passed",
+      "typescript_tests": "122",
+      "go_tests_and_vet": "normal_and_civora_sim_passed",
+      "fixture_reproduction": "passed",
+      "legacy_replays_and_archive_audits": "passed"
+    },
+    "followups": {
+      "typescript_tests": "123 passed including shared ZIP-215 boundary vector",
+      "go": "consensus/network targeted tests normal and civora_sim, vet including fixture generator passed",
+      "new_signer_generation": "native signing with independently preserved old/new last-sign states passed",
+      "native_state_proof": "latest actual native partition proof reverified in Go and final TypeScript verifier"
+    },
+    "abrupt_process_death_scenarios": "47",
+    "new_abrupt_process_death_scenarios": "13: 4 ABCI Commit boundaries and 9 partition admission/processing/seal boundaries",
+    "native_command": "npm run test:consensus",
+    "native_evidence": ".tools/acceptance/network-a4f765c2-5219-4975-87ec-d29ea0136e55/report.json",
+    "native_checks": [
+      "seven-process-finality",
+      "signed-account-and-invalid-transaction",
+      "same-block-and-apphash-on-seven-replicas",
+      "native-commit-signatures-verified",
+      "two-offline-finality",
+      "four-nodes-cannot-finalize",
+      "abrupt-restart-with-persistent-sign-state",
+      "seven-replicas-recover",
+      "native-partition-opening-deadline-and-Go-TypeScript-apphash-proof",
+      "native-partition-abrupt-restart",
+      "native-validator-rotation-at-H-plus-2",
+      "native-new-key-signs-without-resetting-old-key-state",
+      "native-mixed-versions-old-signers-stop-before-activation",
+      "native-upgraded-nodes-resume-from-durable-state"
+    ]
+  },
+  "encrypted_replay": {
+    "partitions": "8",
+    "admitted": "6",
+    "processed": "6",
+    "counted": "5",
+    "invalid_copy": "1",
+    "yes": "3",
+    "no": "2",
+    "result": "provisional",
+    "law_effect": false,
+    "uncertified_48_hour_expiry": "failed_certification",
+    "main_final_app_hash": "59cda42123b22ee8a39dee3de1ecee47ecf4a208d71c4ecb7b95fd56c9cb27f1",
+    "lane_final_app_hashes": [
+      "790ed34187d54149232694c235ecb5a2c225f6c0d460ede56205c9b301c6b58b",
+      "755f4460d76daa4647a24e609f4fb6b70726f47790b8b8b97bc833a3c05a583c",
+      "2985ffefef07506156bbc5ed69b6015a1eb9469f06bfcd6b1625275b0d4ca5a1",
+      "c42125c88716299b1024313c49a7e84c85a0e44b62a8121d7d3a56b12ded871d",
+      "8b8f2c1d1663d6ef4ae9162988750fd466a148654fed681d69b0e0af37784e92",
+      "c27e818f616cfcad4e4d2bece5e9f0d30f131a125e6aee5441635625f614c040",
+      "5656d4bd67a830d2bce5e7db7941c8b9806e153fb7457178ac3377bdbb09510b",
+      "cc04135f5711d93aa1166514c8931480a328eab0b12f56622fb9b61f41e62e5c"
+    ],
+    "fixture_sha256": "c1dd97df7894b4b043394395ff7551bfa66a7374c57b438695f066d2a9ea39fa",
+    "signed_fixture_commits": "synthetic TEST_ONLY; distinct from native finality evidence"
+  },
+  "acceptance": {
+    "missing_final_lane_including_empty": "refused",
+    "missing_batch_or_archive_signature": "refused",
+    "stale_checkpoint_and_false_terminal_seal": "refused",
+    "invalid_first_attempt_consumes_nullifier": false,
+    "third_distinct_eligible_envelope": "refused",
+    "post_close_idempotent_retry": "preserves_original_position",
+    "separate_processing_budget": "enforced",
+    "global_only_decryption": "verified",
+    "guardian_rotation_outside_active_polls": "verified",
+    "older_version_signs_activation_block": false,
+    "zip215_unreduced_R": "accepted_by_Go_and_TypeScript",
+    "signature_R_reencoding_without_resigning": "refused"
+  },
+  "deferred": {
+    "v0_6": "historical proof service, selective archives, mirrors, public relays and independent audits",
+    "institutional_multichain_upgrade_arming": "not implemented as release authority; genesis development fixtures only",
+    "WAN_and_mass_capacity_qualification": "not claimed",
+    "public_guardian_profile_7_of_11": "not claimed; development 3/5 retained",
+    "deployment_and_emergency_tools": "not started",
+    "physical_mobile_qualification": "prior pending item; not rerun"
+  },
+  "decision": "spec/decisions/0011-consensus-partitions-v0.5.md"
+}

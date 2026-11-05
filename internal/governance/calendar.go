@@ -57,6 +57,15 @@ func (s *State) Advance(x Execution) error {
 		poll := s.Polls[*p.PollID]
 		poll.ClosedHeight = ptr(x.Height)
 		poll.AggregateDigest = ptr(codec.Hash("poll/aggregate", []any{x.NetworkID, *p.PollID, x.Height, poll.Count, poll.Aggregate}))
+		if x.Partitioned {
+			deadline, e := add(num(*poll.ClosesAtMS), 48*60*60*1000)
+			if e != nil {
+				return e
+			}
+			poll.TallyDueAtMS = ptr(str(deadline))
+			s.setState(x, item.id, "processing")
+			continue
+		}
 		s.setState(x, item.id, "tallying")
 		if poll.Count == "0" {
 			poll.Result = &Result{"0", "0", true, x.Height, str(x.Time)}
@@ -76,6 +85,8 @@ func (s *State) Advance(x Execution) error {
 		case "preparing":
 			deadline = p.SetupDueMS
 		case "tallying":
+			deadline = s.Polls[*p.PollID].TallyDueAtMS
+		case "processing", "provisional":
 			deadline = s.Polls[*p.PollID].TallyDueAtMS
 		}
 		if deadline != nil && num(*deadline) <= x.Time {
@@ -103,6 +114,9 @@ func (s *State) Advance(x Execution) error {
 		}
 		if p.State == "tallying" {
 			status = "failed_tally"
+		}
+		if p.State == "processing" || p.State == "provisional" {
+			status = "failed_certification"
 		}
 		s.setState(x, item.id, status)
 	}

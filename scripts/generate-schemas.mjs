@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { governanceSchemas } from "./governance-schemas.mjs";
 import { eligibilitySchemas } from "./eligibility-schemas.mjs";
 import { electionguardSchemas } from "./electionguard-schemas.mjs";
+import { consensusSchemas } from "./consensus-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -111,7 +112,7 @@ const armed = object({
 const config = object({
   network_id: id,
   chain_id: name,
-  voting_profile: constant("inline_dev"),
+  voting_profile: { enum: ["inline_dev", "transport_dev_v0_5"] },
   mode: constant("development"),
   registry: ref("registry"),
   activations: list(ref("armed"), 16),
@@ -234,6 +235,7 @@ const definitions = {
 governanceSchemas(definitions, { object, list, ref, id, uint, constant });
 eligibilitySchemas(definitions, { object, list, ref, id, uint, constant });
 electionguardSchemas(definitions, { object, list, ref, id, uint, constant });
+consensusSchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",
@@ -276,6 +278,26 @@ for (const key of [
   "scale_context",
   "scale_envelope",
   "eg_archive",
+  "replica_block",
+  "replica_record",
+  "network_genesis",
+  "network_settings",
+  "consensus_trust",
+  "state_membership",
+  "consensus_state_proof",
+  "partition_frozen",
+  "partition_config",
+  "partition_batch",
+  "partition_process",
+  "partition_tx",
+  "partition_batch_ref",
+  "partition_summary",
+  "partition_checkpoint",
+  "coordinator_config",
+  "partition_tally",
+  "coordinator_tx",
+  "partition_receipt",
+  "consensus_rotation",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

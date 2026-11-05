@@ -37,6 +37,7 @@ func (e *Engine) execution(previous *Engine, emit func(string, string)) governan
 		return out
 	}
 	x := governance.Execution{NetworkID: e.Config.NetworkID, Epoch: e.Config.Registry.Epoch, Height: fmt.Sprint(e.Height), Time: e.Time, Accounts: view(e.Accounts), PreviousAccounts: view(previous.Accounts), PreviousHeight: fmt.Sprint(previous.Height), Eligibility: e.adapters.Eligibility, Crypto: e.adapters.Voting, Effects: e.adapters.Effects, Membership: e.adapters.Membership, Authorize: e.Authorize, Emit: emit}
+	x.Partitioned = e.Config.VotingProfile == "transport_dev_v0_5"
 	if e.Config.Governance != nil {
 		x.Config = *e.Config.Governance
 	}
@@ -44,6 +45,9 @@ func (e *Engine) execution(previous *Engine, emit func(string, string)) governan
 }
 func (e *Engine) applyTransaction(tx Transaction, emit func(string, string), position string) error {
 	b := tx.Body
+	if e.Config.VotingProfile == "transport_dev_v0_5" && (b.Type == "vote.cast" || b.Type == "poll.tally") {
+		return fmt.Errorf("ERR_PARTITION_TRANSPORT_REQUIRED")
+	}
 	if len(codec.Must(tx)) > MaxTxBytes {
 		return fmt.Errorf("ERR_SIZE")
 	}

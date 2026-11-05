@@ -577,6 +577,9 @@
             "proposal.scheduled",
             "proposal.open",
             "proposal.tallying",
+            "proposal.processing",
+            "proposal.provisional",
+            "proposal.failed_certification",
             "proposal.adopted",
             "proposal.applied",
             "proposal.rejected",
@@ -1742,7 +1745,10 @@
           "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
         },
         "voting_profile": {
-          "const": "inline_dev"
+          "enum": [
+            "inline_dev",
+            "transport_dev_v0_5"
+          ]
         },
         "mode": {
           "const": "development"
@@ -3206,6 +3212,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -3418,6 +3427,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -3633,6 +3645,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -3854,6 +3869,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -4065,6 +4083,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -4277,6 +4298,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -4492,6 +4516,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -4713,6 +4740,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -4939,6 +4969,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -5161,6 +5194,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -5381,6 +5417,9 @@
                 "scheduled",
                 "open",
                 "tallying",
+                "processing",
+                "provisional",
+                "failed_certification",
                 "adopted",
                 "applied",
                 "rejected",
@@ -5568,6 +5607,9 @@
             "scheduled",
             "open",
             "tallying",
+            "processing",
+            "provisional",
+            "failed_certification",
             "adopted",
             "applied",
             "rejected",
@@ -6670,6 +6712,945 @@
         "format",
         "genesis",
         "records"
+      ],
+      "additionalProperties": false
+    },
+    "replica_block": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "time_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]*$",
+            "maxLength": 349526
+          },
+          "maxItems": 8192
+        }
+      },
+      "required": [
+        "height",
+        "time_ms",
+        "transactions"
+      ],
+      "additionalProperties": false
+    },
+    "replica_record": {
+      "type": "object",
+      "properties": {
+        "block": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/replica_block"
+        },
+        "identity": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "time": {
+              "type": "string",
+              "minLength": 20,
+              "maxLength": 40
+            }
+          },
+          "required": [
+            "hash",
+            "time"
+          ],
+          "additionalProperties": false
+        },
+        "state": {},
+        "app_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "block",
+        "identity",
+        "state",
+        "app_hash"
+      ],
+      "additionalProperties": false
+    },
+    "network_genesis": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "ledger"
+            },
+            "data": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+            },
+            "consensus_rotations": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_rotation"
+              },
+              "maxItems": 64
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "partition"
+            },
+            "data": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_config"
+            },
+            "consensus_rotations": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_rotation"
+              },
+              "maxItems": 64
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "coordinator"
+            },
+            "data": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/coordinator_config"
+            },
+            "consensus_rotations": {
+              "type": "array",
+              "items": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_rotation"
+              },
+              "maxItems": 64
+            }
+          },
+          "required": [
+            "kind",
+            "data"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "network_settings": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "const": "PUBLIC_TEST_KEYS_ONLY"
+        },
+        "chain_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "genesis_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "seat": {
+          "type": "string",
+          "pattern": "^[0-6]$"
+        },
+        "port": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "peers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "maxItems": 6
+        }
+      },
+      "required": [
+        "label",
+        "chain_id",
+        "genesis_sha256",
+        "seat",
+        "port",
+        "peers"
+      ],
+      "additionalProperties": false
+    },
+    "consensus_trust": {
+      "type": "object",
+      "properties": {
+        "chain_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 7,
+          "minItems": 7,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "chain_id",
+        "keys"
+      ],
+      "additionalProperties": false
+    },
+    "state_membership": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "oneOf": [
+            {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/entry"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "const": "transport_polls"
+                },
+                "key": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_frozen"
+                }
+              },
+              "required": [
+                "table",
+                "key",
+                "value"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "const": "lane_checkpoint"
+                },
+                "key": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "value": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_summary"
+                }
+              },
+              "required": [
+                "table",
+                "key",
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "siblings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 256,
+          "minItems": 256
+        }
+      },
+      "required": [
+        "entry",
+        "siblings"
+      ],
+      "additionalProperties": false
+    },
+    "consensus_state_proof": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "signed_header": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 65536
+        },
+        "path": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/state_membership"
+        }
+      },
+      "required": [
+        "height",
+        "signed_header",
+        "path"
+      ],
+      "additionalProperties": false
+    },
+    "partition_frozen": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/scale_context"
+        },
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "guardian_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "uniqueItems": true
+        },
+        "ceremony_bundle": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 174763
+        },
+        "opens_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "closes_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "source_height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_trust"
+          },
+          "maxItems": 256,
+          "minItems": 1
+        },
+        "archive_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "uniqueItems": true
+        },
+        "eligible_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "context",
+        "proposal_id",
+        "guardian_ids",
+        "ceremony_bundle",
+        "opens_at_ms",
+        "closes_at_ms",
+        "source_height",
+        "lanes",
+        "archive_keys",
+        "eligible_count"
+      ],
+      "additionalProperties": false
+    },
+    "partition_config": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "chain_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "lane_id": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "source": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_trust"
+        }
+      },
+      "required": [
+        "network_id",
+        "chain_id",
+        "lane_id",
+        "protocol_epoch",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "archive_signature": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{128}$"
+        }
+      },
+      "required": [
+        "key",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "partition_batch": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "envelopes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "maxLength": 349526
+          },
+          "maxItems": 32,
+          "minItems": 1
+        },
+        "certificate": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/archive_signature"
+          },
+          "maxItems": 5,
+          "minItems": 3
+        }
+      },
+      "required": [
+        "poll_id",
+        "envelopes",
+        "certificate"
+      ],
+      "additionalProperties": false
+    },
+    "partition_process": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "count": {
+          "enum": [
+            "1",
+            "2",
+            "3",
+            "4"
+          ]
+        }
+      },
+      "required": [
+        "poll_id",
+        "count"
+      ],
+      "additionalProperties": false
+    },
+    "partition_tx": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "partition.open"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_state_proof"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "partition.admit"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_batch"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "partition.process"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_process"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "partition_batch_ref": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lane_id": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "start": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "retention": {
+          "const": "persisted-development-v0.5"
+        }
+      },
+      "required": [
+        "id",
+        "network_id",
+        "poll_id",
+        "lane_id",
+        "protocol_epoch",
+        "start",
+        "count",
+        "root",
+        "manifest_sha256",
+        "retention"
+      ],
+      "additionalProperties": false
+    },
+    "partition_summary": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lane_id": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "protocol_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "context_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "time_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "admitted_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "admission_root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "processed_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "status_root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "counted_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "spent_root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "aggregate": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "batch_count": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "batch_root": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "admission_sealed": {
+          "type": "boolean"
+        },
+        "processing_sealed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "network_id",
+        "poll_id",
+        "lane_id",
+        "protocol_epoch",
+        "context_id",
+        "height",
+        "time_ms",
+        "admitted_count",
+        "admission_root",
+        "processed_count",
+        "status_root",
+        "counted_count",
+        "spent_root",
+        "aggregate",
+        "batch_count",
+        "batch_root",
+        "admission_sealed",
+        "processing_sealed"
+      ],
+      "additionalProperties": false
+    },
+    "partition_batch_proof": {
+      "type": "object",
+      "properties": {
+        "reference": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_batch_ref"
+        },
+        "certificate": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/archive_signature"
+          },
+          "maxItems": 5,
+          "minItems": 3
+        },
+        "inclusion": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "reference",
+        "certificate",
+        "inclusion"
+      ],
+      "additionalProperties": false
+    },
+    "partition_checkpoint": {
+      "type": "object",
+      "properties": {
+        "proof": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_state_proof"
+        },
+        "previous_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "admission_consistency": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 64
+        },
+        "batch_consistency": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 64
+        },
+        "extension": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_batch_proof"
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "proof",
+        "previous_id",
+        "admission_consistency",
+        "batch_consistency",
+        "extension"
+      ],
+      "additionalProperties": false
+    },
+    "coordinator_config": {
+      "type": "object",
+      "properties": {
+        "ledger": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/config"
+        },
+        "lanes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_trust"
+          },
+          "maxItems": 256,
+          "minItems": 1
+        },
+        "archive_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 5,
+          "minItems": 5,
+          "uniqueItems": true
+        },
+        "circuit_depth": {
+          "const": "26"
+        },
+        "profile": {
+          "const": "transport_dev_v0_5"
+        }
+      },
+      "required": [
+        "ledger",
+        "lanes",
+        "archive_keys",
+        "circuit_depth",
+        "profile"
+      ],
+      "additionalProperties": false
+    },
+    "partition_tally": {
+      "type": "object",
+      "properties": {
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "decryption_record": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "maxLength": 174763
+            }
+          ]
+        }
+      },
+      "required": [
+        "poll_id",
+        "decryption_record"
+      ],
+      "additionalProperties": false
+    },
+    "coordinator_tx": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "lane.checkpoint"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_checkpoint"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "partition.tally"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_tally"
+            }
+          },
+          "required": [
+            "type",
+            "value"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "partition_receipt": {
+      "type": "object",
+      "properties": {
+        "signed_header": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 65536
+        },
+        "transaction_proof": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 546134
+        },
+        "reference": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/partition_batch_ref"
+        },
+        "envelope": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 349526
+        },
+        "index": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "inclusion": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "signed_header",
+        "transaction_proof",
+        "reference",
+        "envelope",
+        "index",
+        "inclusion"
+      ],
+      "additionalProperties": false
+    },
+    "consensus_rotation": {
+      "type": "object",
+      "properties": {
+        "height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 7,
+          "minItems": 7,
+          "uniqueItems": true
+        },
+        "guardians": {
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "account_id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "signing_pk": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  }
+                },
+                "required": [
+                  "account_id",
+                  "signing_pk"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 5,
+              "minItems": 5
+            },
+            {
+              "type": "array",
+              "maxItems": 0
+            }
+          ]
+        },
+        "authorization": {
+          "const": "development_genesis_fixture"
+        }
+      },
+      "required": [
+        "height",
+        "keys",
+        "guardians",
+        "authorization"
       ],
       "additionalProperties": false
     }

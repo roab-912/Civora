@@ -1,6 +1,6 @@
 {
   "name": "civora",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -20,6 +20,9 @@
     "fixtures:eligibility:check": "npm run build && node scripts/generate-eligibility-fixtures.mjs --check",
     "test:browser": "npm run build && node scripts/test-eligibility-browsers.mjs",
     "test:scale": "npm run build && node scripts/check-eligibility-scale.mjs",
+    "test:consensus": "npm run build && node scripts/test-consensus.mjs",
+    "fixtures:partitions": "npm run build && node scripts/generate-partition-ballots.mjs",
+    "fixtures:partitions:check": "npm run build && node scripts/generate-partition-ballots.mjs --check",
     "fixtures:electionguard": "npm run build && node scripts/prepare-electionguard-oracle.mjs && node scripts/materialize-electionguard.mjs && node scripts/generate-electionguard-fixtures.mjs && node scripts/generate-electionguard-negatives.mjs && node scripts/generate-scale-fixtures.mjs && node scripts/generate-encrypted-fixtures.mjs",
     "fixtures:electionguard:check": "npm run build && node scripts/prepare-electionguard-oracle.mjs --check && node scripts/materialize-electionguard.mjs --check && node scripts/generate-electionguard-fixtures.mjs --check && node scripts/generate-electionguard-negatives.mjs --check && node scripts/generate-scale-fixtures.mjs --check && node scripts/generate-encrypted-fixtures.mjs --check",
     "crypto:electionguard:review": "npm run build && node scripts/review-electionguard.mjs",
@@ -36,6 +39,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
+    "@noble/curves-comet": "npm:@noble/curves@2.4.0",
     "@semaphore-protocol/group": "4.14.5",
     "@semaphore-protocol/identity": "4.14.5",
     "@semaphore-protocol/proof": "4.14.5",

@@ -300,6 +300,7 @@ type AccountView struct {
 	Commitment string
 }
 type Execution struct {
+	Partitioned              bool
 	NetworkID, Epoch, Height string
 	Time                     uint64
 	Config                   Config
@@ -318,7 +319,7 @@ func (s *State) LivePolls() int {
 	n := 0
 	for _, p := range s.Proposals {
 		switch p.State {
-		case "preparing", "scheduled", "open", "tallying":
+		case "preparing", "scheduled", "open", "tallying", "processing", "provisional":
 			n++
 		}
 	}

@@ -1,18 +1,25 @@
 {
-  "profile": "development-v0.4-with-v0.1-v0.2-v0.3-replay",
+  "profile": "development-v0.5-with-v0.1-v0.2-v0.3-v0.4-replay",
   "toolchain": {
     "go_tested": "go1.27.3 windows/amd64",
     "go_minimum": "1.26.0",
     "node_tested": "24.12.0",
     "npm_tested": "11.10.0"
   },
-  "consensus_reserved_for_v0_5": {
+  "consensus_v0_5": {
     "module": "github.com/cometbft/cometbft",
-    "version": "v0.38.17",
-    "commit": "d03254d3599b973f979314e6383b89fa1802e679",
-    "module_sum": "h1:FkrQNbAjiFqXydeAO81FUzriL4Bz0abYxN/eOHrQGOk=",
-    "go_mod_sum": "h1:5l0SkgeLRXi6bBfQuevXjKqML1jjfJJlvI1Ulp02/o4=",
-    "imported_in_v0_1": false
+    "version": "v0.38.26",
+    "commit": "94d77f9f51a72e2b7d832798859f6222f08028f8",
+    "module_sum": "h1:MIPYgOSvyyiN1jo3SZljKy4ZXqs896aQnj3pQFfUmaE=",
+    "go_mod_sum": "h1:mDrAs+NMp7gc2ExoTE2/S6lDMespxaEc2Nd2BvDbbmM=",
+    "validators": "5/7 unit power",
+    "development_only": true,
+    "profile": "transport_dev_v0_5",
+    "fixture": "spec/fixtures/v0.5/transport.json",
+    "native_acceptance": "npm run test:consensus",
+    "typescript_signature_rules": "ZIP-215",
+    "typescript_signature_package": "@noble/curves-comet = npm:@noble/curves@2.4.0",
+    "public_pilot_qualified": false
   },
   "dependencies": {
     "go": "go.mod + go.sum",

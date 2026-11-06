@@ -9,6 +9,10 @@ import {
   publicKey,
 } from "./protocol.js";
 import { read, write, remove, insertIfAbsent } from "./storage.js";
+export function requireWebCrypto(): SubtleCrypto {
+  if (!globalThis.crypto?.subtle) throw Error("ERR_SECURE_CONTEXT");
+  return globalThis.crypto.subtle;
+}
 export interface LocalAccount {
   network_id: string;
   account_id: string;
@@ -58,14 +62,14 @@ async function backupKey(
   uses: KeyUsage[],
 ): Promise<CryptoKey> {
   if (!/^[0-9a-f]{64}$/.test(secret)) throw Error("ERR_BACKUP_CODE");
-  const material = await crypto.subtle.importKey(
+  const material = await requireWebCrypto().importKey(
     "raw",
     bytes(Buffer.from(secret, "hex")),
     "HKDF",
     false,
     ["deriveKey"],
   );
-  return crypto.subtle.deriveKey(
+  return requireWebCrypto().deriveKey(
     {
       name: "HKDF",
       hash: "SHA-256",
@@ -90,7 +94,7 @@ export async function exportBackup(
       account_id: secrets.account_id,
     },
     key = await backupKey(code, salt, ["encrypt"]),
-    cipher = await crypto.subtle.encrypt(
+    cipher = await requireWebCrypto().encrypt(
       {
         name: "AES-GCM",
         iv: bytes(iv),
@@ -119,7 +123,7 @@ export async function importBackup(
   if (b.header.network_id !== network) throw Error("ERR_NETWORK");
   try {
     const key = await backupKey(code, blob(b.salt), ["decrypt"]),
-      clear = await crypto.subtle.decrypt(
+      clear = await requireWebCrypto().decrypt(
         {
           name: "AES-GCM",
           iv: bytes(blob(b.iv)),
@@ -150,7 +154,7 @@ export async function importBackup(
 async function deviceKey(): Promise<CryptoKey> {
   let key = await read<CryptoKey>("vault", "device-key");
   if (!key) {
-    key = await crypto.subtle.generateKey(
+    key = await requireWebCrypto().generateKey(
       { name: "AES-GCM", length: 256 },
       false,
       ["encrypt", "decrypt"],
@@ -174,7 +178,7 @@ export async function saveAccount(
     aad = new TextEncoder().encode(
       canonical([value.network_id, value.account_id]),
     ),
-    cipher = await crypto.subtle.encrypt(
+    cipher = await requireWebCrypto().encrypt(
       { name: "AES-GCM", iv: bytes(iv), additionalData: bytes(aad) },
       await deviceKey(),
       bytes(new TextEncoder().encode(canonical(value))),
@@ -195,7 +199,7 @@ export async function loadAccount(
     cipher: ArrayBuffer;
   }>("vault", "account/" + network);
   if (!value) return null;
-  const plain = await crypto.subtle.decrypt(
+  const plain = await requireWebCrypto().decrypt(
     {
       name: "AES-GCM",
       iv: bytes(value.iv),
@@ -224,7 +228,7 @@ export async function encryptPending(
 ) {
   const iv = crypto.getRandomValues(new Uint8Array(12)),
     aad = new TextEncoder().encode(canonical([network, poll])),
-    cipher = await crypto.subtle.encrypt(
+    cipher = await requireWebCrypto().encrypt(
       { name: "AES-GCM", iv: bytes(iv), additionalData: bytes(aad) },
       await deviceKey(),
       bytes(new TextEncoder().encode(canonical(value))),
@@ -240,7 +244,7 @@ export async function pending<T>(
     network + "/" + poll,
   );
   if (!value) return;
-  const raw = await crypto.subtle.decrypt(
+  const raw = await requireWebCrypto().decrypt(
     {
       name: "AES-GCM",
       iv: bytes(value.iv),

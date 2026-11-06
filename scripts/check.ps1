@@ -68,6 +68,8 @@ try {
     if (-not $SkipPWA) {
         & node scripts/test-pwa.mjs
         if ($LASTEXITCODE -ne 0) { throw 'PWA desktop/mobile acceptance failed' }
+        & node scripts/test-notifications-browser.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Notifications browser acceptance failed' }
     }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'

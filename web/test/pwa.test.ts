@@ -15,6 +15,7 @@ import {
   exportBackup,
   importBackup,
   credentials,
+  requireWebCrypto,
   type PublicAccount,
 } from "../src/pwa/vault.js";
 import {
@@ -42,6 +43,19 @@ installValidators(
       ]),
   ),
 );
+
+test("insecure LAN context refuses the vault with a clear error before key import", () => {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "crypto")!;
+  try {
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: { subtle: undefined },
+    });
+    assert.throws(() => requireWebCrypto(), /ERR_SECURE_CONTEXT/);
+  } finally {
+    Object.defineProperty(globalThis, "crypto", descriptor);
+  }
+});
 test("browser signing port reproduces the exact §13 vector", () => {
   const v = JSON.parse(readFileSync("spec/fixtures/vector13.json", "utf8"));
   assert.equal(

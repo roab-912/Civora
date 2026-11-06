@@ -11,6 +11,11 @@ import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import { canonical, domain, signDigest } from "../dist/web/src/protocol.js";
 import { actors, ceremony, tally } from "./pwa-guardians.TEST_ONLY.mjs";
+import { NotificationService } from "../dist/services/notifications/service.js";
+import {
+  validatePushKeys,
+  endpointURL,
+} from "../dist/services/notifications/transport.js";
 const args = process.argv.slice(2),
   get = (flag, fallback) => {
     const i = args.indexOf(flag);
@@ -218,6 +223,35 @@ const historical = JSON.parse(
       development_clock: false,
     },
   ];
+const notificationMessages = [],
+  testNotifications = args.includes("--notifications-test-only"),
+  notifications = new NotificationService({
+    directory: join(dir, "notifications"),
+    contact: get(
+      "--push-contact",
+      process.env.CIVORA_PUSH_CONTACT ??
+        "mailto:civora-development@example.invalid",
+    ),
+    watches: choices.map((c, i) => ({
+      ...c,
+      api_roots: [i === 0 ? live : archive],
+    })),
+    ...(testNotifications
+      ? {
+          sender: {
+            async send(_subscription, message) {
+              notificationMessages.push(message);
+              return { status: 201 };
+            },
+          },
+          async validateEndpoint(keys, endpoint) {
+            await validatePushKeys(keys);
+            if (endpointURL(endpoint).hostname !== "push.example.test")
+              throw Error("ERR_TEST_ENDPOINT");
+          },
+        }
+      : {}),
+  });
 let serial = Promise.resolve();
 function exclusive(fn) {
   const next = serial.then(fn);
@@ -233,7 +267,7 @@ const mime = {
     ".json": "application/json",
     ".webmanifest": "application/manifest+json",
   },
-  assets = resolve(".tools/pwa/public");
+  assets = resolve(".tools/pwa/v0.8/public");
 const server = createServer(async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
@@ -258,11 +292,22 @@ const server = createServer(async (req, res) => {
       res.end();
       return;
     }
+    if (await notifications.handle(req, res, path)) return;
+    if (
+      testNotifications &&
+      path === "/__dev/notifications" &&
+      req.method === "GET"
+    ) {
+      res.setHeader("Content-Type", "application/json");
+      res.end(canonical({ test_only: true, messages: notificationMessages }));
+      return;
+    }
     if (path === "/pwa-config.json") {
       res.setHeader("Content-Type", "application/json");
       res.end(
         JSON.stringify({
-          version: "0.7.0",
+          version: "0.8.0",
+          notifications: { api_root: "/notifications" },
           networks: choices,
           development: true,
         }),
@@ -375,6 +420,7 @@ async function close() {
   closing = true;
   server.closeAllConnections();
   server.close();
+  await notifications.close();
   await Promise.all(
     children.map(
       (p) =>
@@ -395,3 +441,4 @@ process.on("SIGTERM", close);
 process.on("message", (message) => {
   if (message?.type === "shutdown") void close();
 });
+if (process.send) process.on("disconnect", () => void close());

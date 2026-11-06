@@ -12,5 +12,5 @@
     "declaration": true,
     "skipLibCheck": true
   },
-  "include": ["web/**/*.ts", "scripts/**/*.ts"]
+  "include": ["web/**/*.ts", "scripts/**/*.ts", "services/**/*.ts"]
 }

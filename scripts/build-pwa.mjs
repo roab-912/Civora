@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
-const directory = resolve(".tools/pwa/public");
+const directory = resolve(".tools/pwa/v0.8/public");
 mkdirSync(directory, { recursive: true });
 const ajv = new Ajv2020({
     strict: true,
@@ -29,7 +29,11 @@ for (const f of readdirSync("spec/schemas").filter((f) =>
 const generated = resolve(".tools/pwa/validators.mjs");
 writeFileSync(generated, standalone(ajv, exports));
 const result = await build({
-  entryPoints: { app: "web/src/pwa/app.ts", worker: "web/src/pwa/worker.ts" },
+  entryPoints: {
+    app: "web/src/pwa/app.ts",
+    worker: "web/src/pwa/worker.ts",
+    sw: "web/src/pwa/service-worker.ts",
+  },
   outdir: directory,
   bundle: true,
   platform: "browser",
@@ -70,7 +74,6 @@ for (const file of [
   "icon.svg",
   "icon-192.png",
   "icon-512.png",
-  "sw.js",
 ])
   copyFileSync(join("web/pwa", file), join(directory, file));
 const assets = {};
@@ -84,7 +87,7 @@ for (const name of readdirSync(directory).sort()) {
 }
 writeFileSync(
   join(directory, "build.json"),
-  JSON.stringify({ version: "0.7.0", assets }, null, 2),
+  JSON.stringify({ version: "0.8.0", assets }, null, 2),
 );
 console.log(
   "PWA built with local dependencies, precompiled schemas and no source maps: " +

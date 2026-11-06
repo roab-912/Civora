@@ -44,7 +44,7 @@ if (!origin) {
   });
 }
 const report = {
-  milestone: "v0.7",
+  milestone: "v0.8-regression-v0.7",
   mode: "PUBLIC_TEST_ONLY_REAL_CRYPTO_SYNTHETIC_COMMITS",
   physical_devices: false,
   checks: [],
@@ -420,6 +420,7 @@ try {
   writeFileSync(
     hostConfig,
     JSON.stringify({
+      notifications: { directory: join(directory, "host-notifications") },
       networks: [
         { name: choice.name, manifest: choice.manifest, api_roots: [base] },
       ],

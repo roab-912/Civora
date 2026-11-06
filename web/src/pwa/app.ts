@@ -27,12 +27,21 @@ import {
   credentials,
   encryptPending,
   pending,
+  requireWebCrypto,
   type LocalAccount,
   type BackupSecrets,
   type Backup,
   type PublicAccount,
 } from "./vault.js";
 import { read, write } from "./storage.js";
+import {
+  settings as notificationSettings,
+  pushCapability,
+  enablePush,
+  disablePush,
+  updatePreferences,
+  getNews,
+} from "./notifications.js";
 import { verifyInclusion, logRoot } from "../consensus.js";
 import { checkProof, trustAt } from "./network.js";
 import { verifyHeader } from "../consensus.js";
@@ -55,6 +64,7 @@ let client: Client,
   routing = 0,
   generation = 0,
   activeWorker: Worker | null = null;
+let notificationRoot: string | null = null;
 let workerReject: ((error: Error) => void) | null = null;
 function cancelWorker() {
   activeWorker?.terminate();
@@ -141,6 +151,8 @@ function flash(text: string, error = false) {
 }
 function errorMessage(e: unknown) {
   const message = e instanceof Error ? e.message : "ERR_UNAVAILABLE";
+  if (message.includes("SECURE_CONTEXT"))
+    return "La création de compte et le vote nécessitent HTTPS avec un certificat approuvé sur cet appareil. Ouvrez l’adresse HTTPS du serveur ; l’accès HTTP par adresse IP permet seulement la consultation.";
   if (message.includes("NETWORK") || message.includes("CONTEXT"))
     return "Ce contexte appartient à un autre réseau ou scrutin. Opération refusée.";
   if (message.includes("BACKUP_DECRYPT"))
@@ -225,6 +237,10 @@ function setPage(...children: Child[]) {
   if (heading && document.activeElement === document.body)
     heading.focus({ preventScroll: true });
 }
+function renderPage(expected: number, ...children: Child[]) {
+  if (expected !== generation) return;
+  setPage(...children);
+}
 function cachedNote() {
   return el(
     "p",
@@ -279,6 +295,8 @@ async function list(resource: string, status = "", kind = "") {
   )) as { height: string; items: Row[]; next_cursor: string };
 }
 async function home() {
+  const viewGeneration = generation;
+
   const proposals = await list("proposals"),
     open = proposals.items.filter((p) => p.state === "open"),
     upcoming = proposals.items.filter((p) =>
@@ -287,7 +305,8 @@ async function home() {
     results = proposals.items.filter((p) =>
       ["adopted", "applied", "rejected", "contested"].includes(p.state),
     );
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Votre espace civique",
       "Les décisions se construisent ensemble.",
@@ -351,6 +370,8 @@ async function home() {
   );
 }
 async function proposals() {
+  const viewGeneration = generation;
+
   const kind =
     new URLSearchParams(location.hash.split("?")[1] ?? "").get("type") ?? "";
   let status =
@@ -406,7 +427,8 @@ async function proposals() {
     "secondary",
   );
   more.hidden = !data.next_cursor;
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Débattre et décider",
       "Les propositions",
@@ -439,6 +461,8 @@ async function confirmation(id: string) {
   throw Error("ERR_PROOF_PENDING");
 }
 async function detail(id: string, byPoll = false) {
+  const viewGeneration = generation;
+
   const p = byPoll
     ? await client.value(
         "proposals",
@@ -521,7 +545,8 @@ async function detail(id: string, byPoll = false) {
         "development",
       ),
     );
-  setPage(
+  renderPage(
+    viewGeneration,
     header(actions[p.action] ?? "Proposition", title(p), p.rationale),
     el(
       "div",
@@ -621,8 +646,11 @@ function field(
   return el("label", { for: name }, el("span", {}, label), input);
 }
 async function newProposal(action: string, target?: string) {
+  const viewGeneration = generation;
+
   if (!account) {
-    setPage(
+    renderPage(
+      viewGeneration,
       header(
         "Votre compte",
         "Un compte est nécessaire pour proposer.",
@@ -817,7 +845,8 @@ async function newProposal(action: string, target?: string) {
       submit.disabled = true;
     });
   };
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Prendre l’initiative",
       actions[action] ?? "Proposer une décision",
@@ -828,9 +857,12 @@ async function newProposal(action: string, target?: string) {
   );
 }
 async function objects(resource: "laws" | "roles", id?: string) {
+  const viewGeneration = generation;
+
   if (!id) {
     const data = await list(resource);
-    setPage(
+    renderPage(
+      viewGeneration,
       header(
         "Le registre",
         resource === "laws" ? "Les lois" : "Les rôles civiques",
@@ -947,7 +979,8 @@ async function objects(resource: "laws" | "roles", id?: string) {
       ),
     );
   }
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       resource === "laws" ? "Texte du registre" : "Fonction civique",
       c.title ?? c.label,
@@ -997,6 +1030,8 @@ function download(name: string, value: unknown) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 async function accountPage() {
+  const viewGeneration = generation;
+
   const current = account
     ? ((await client.value(
         "accounts",
@@ -1048,6 +1083,7 @@ async function accountPage() {
         "Aucun email, numéro ni portefeuille externe. Votre compte est propre au réseau sélectionné.",
       ),
       button("Créer un compte", async () => {
+        requireWebCrypto();
         await client.refresh();
         if (!client.canWrite()) throw Error("ERR_OFFLINE_OR_STALE");
         await backupStep(newAccount(client.network));
@@ -1160,13 +1196,15 @@ async function accountPage() {
       await accountPage();
     });
   };
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Votre espace personnel",
       "Compte et sauvegarde",
       "Les clés de récupération restent dans votre sauvegarde chiffrée. Conservez séparément son code de secours.",
     ),
     box,
+    await notificationControls(),
     restore,
     el(
       "p",
@@ -1179,6 +1217,8 @@ async function backupStep(
   secrets: BackupSecrets,
   rotation?: { previous: LocalAccount; recovery: string },
 ) {
+  const viewGeneration = generation;
+
   const result = await exportBackup(secrets),
     code = el(
       "code",
@@ -1219,7 +1259,8 @@ async function backupStep(
   done.onchange = () => {
     confirmButton.disabled = !done.checked;
   };
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       rotation
         ? "Renouveler les clés · étape 1 sur 2"
@@ -1252,6 +1293,7 @@ async function backupStep(
   );
 }
 function workerCall(type: string, input: unknown): Promise<any> {
+  requireWebCrypto();
   cancelWorker();
   const w = new Worker("/worker.js", { type: "module" });
   activeWorker = w;
@@ -1281,6 +1323,8 @@ interface PendingVote {
   network_id: string;
 }
 async function votePage(id: string) {
+  const viewGeneration = generation;
+
   if (!account) {
     location.hash = "/account";
     return;
@@ -1393,7 +1437,8 @@ async function votePage(id: string) {
     form.replaceWith(confirmBox);
     confirmBox.querySelector("button")!.focus();
   };
-  setPage(
+  renderPage(
+    viewGeneration,
     header("Participer au scrutin", title(p), p.changes?.text ?? p.rationale),
     el(
       "div",
@@ -1428,6 +1473,8 @@ async function transmit(id: string, value: PendingVote) {
   );
 }
 async function receiptPage(id: string, value: PendingVote) {
+  const viewGeneration = generation;
+
   let status = "En cours de transmission",
     verified = false,
     result: Row = {};
@@ -1535,7 +1582,8 @@ async function receiptPage(id: string, value: PendingVote) {
       status = "Reçu conservé sur cet appareil · hors ligne";
     else throw e;
   }
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Votre bulletin",
       status,
@@ -1586,6 +1634,8 @@ async function receiptPage(id: string, value: PendingVote) {
   );
 }
 async function verifyResult(id: string) {
+  const viewGeneration = generation;
+
   flash("Vérification indépendante du résultat en cours…");
   let report: Row;
   if (client.config.voting_profile === "transport_dev_v0_6") {
@@ -1654,7 +1704,8 @@ async function verifyResult(id: string) {
     };
   }
   flash("Preuve du total vérifiée sur cet appareil.");
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Vérification indépendante",
       "Le résultat est vérifié.",
@@ -1690,7 +1741,219 @@ async function verifyResult(id: string) {
     link("Retour au dossier", "/polls/" + id),
   );
 }
+async function notificationControls(): Promise<HTMLElement> {
+  const box = el(
+      "section",
+      { class: "card form" },
+      el("h2", {}, "Notifications et réseaux suivis"),
+    ),
+    state = await notificationSettings(),
+    capability = pushCapability(),
+    group = el("fieldset", {}, el("legend", {}, "Réseaux à suivre"));
+  box.append(
+    el(
+      "p",
+      {},
+      "Recevez une alerte générique à l’ouverture d’un scrutin. L’abonnement est indépendant du compte et ne contient aucun bulletin. La boîte d’actualités fonctionne sans autorisation de notification.",
+    ),
+  );
+  for (const choice of choices) {
+    const input = el("input", {
+      type: "checkbox",
+      name: "follow-network",
+      value: choice.manifest.network_id,
+    });
+    input.checked = state
+      ? state.networks.includes(choice.manifest.network_id)
+      : choice.manifest.network_id === client.network;
+    group.append(el("label", { class: "check" }, input, choice.name));
+  }
+  const selected = () =>
+    [...group.querySelectorAll<HTMLInputElement>("input:checked")].map(
+      (i) => i.value,
+    );
+  box.append(
+    group,
+    el(
+      "p",
+      { class: "muted" },
+      state?.enabled
+        ? "Push activés sur cet appareil."
+        : "Push désactivés. Les actualités restent accessibles.",
+    ),
+  );
+  if (capability) box.append(el("p", { class: "source-note" }, capability));
+  if (!notificationRoot)
+    box.append(
+      el(
+        "p",
+        {},
+        "Le service de notifications n’est pas configuré. Vous pouvez consulter les dossiers et voter normalement.",
+      ),
+    );
+  else {
+    if (!state?.enabled && !state?.pending_delete && !capability)
+      box.append(
+        button("Activer les notifications", async () => {
+          const networks = selected();
+          if (!networks.length) throw Error("Choisissez au moins un réseau.");
+          await enablePush(notificationRoot!, networks);
+          flash(
+            "Notifications activées. Aucun identifiant de compte n’est transmis au service.",
+          );
+          await route();
+        }),
+      );
+    if (state?.enabled)
+      box.append(
+        button(
+          "Enregistrer les réseaux suivis",
+          async () => {
+            await updatePreferences(selected());
+            flash("Préférences enregistrées.");
+            await route();
+          },
+          "secondary",
+        ),
+      );
+    if (state)
+      box.append(
+        button(
+          state.pending_delete
+            ? "Réessayer la désinscription"
+            : "Désactiver et me désabonner",
+          async () => {
+            const removed = await disablePush();
+            flash(
+              removed
+                ? "Abonnement supprimé. Les actualités restent consultables."
+                : "Push désactivés sur cet appareil. La suppression côté serveur reste à réessayer lorsque la connexion sera disponible.",
+            );
+            await route();
+          },
+          "secondary",
+        ),
+      );
+  }
+  box.append(link("Ouvrir la boîte d’actualités", "/news"));
+  return box;
+}
+async function newsPage() {
+  const viewGeneration = generation;
+
+  const network = client.network,
+    key = "news/" + network,
+    seenKey = "news-read/" + network;
+  let items: Row[] = [],
+    cursor = "",
+    cached = false,
+    source = true,
+    time = Date.now();
+  const seen = new Set((await read<string[]>("settings", seenKey)) ?? []);
+  if (notificationRoot)
+    try {
+      const page = await getNews(notificationRoot, network);
+      items = page.items;
+      cursor = page.next_cursor;
+      source = page.source_available;
+      await write("public", key, { items, cursor, source, time });
+    } catch {
+      const old = await read<{
+        items: Row[];
+        cursor: string;
+        source: boolean;
+        time: number;
+      }>("public", key);
+      if (old) {
+        ({ items, cursor, source, time } = old);
+        cached = true;
+      } else source = false;
+    }
+  const cards = el("div", { class: "cards" });
+  const card = (item: Row) =>
+    el(
+      "article",
+      { class: "card" },
+      el("p", { class: "eyebrow" }, seen.has(item.event_id) ? "Lu" : "Nouveau"),
+      el("h2", {}, "Un référendum a été ouvert"),
+      el("p", {}, "Ouverture : " + date(item.opened_at_ms)),
+      el("p", {}, "Clôture : " + date(item.closes_at_ms)),
+      el(
+        "p",
+        {},
+        uint(item.closes_at_ms) > BigInt(Date.now())
+          ? "Consultez le dossier et son calendrier avant de participer."
+          : "Cette annonce est historique. Vérifiez le statut actuel du dossier.",
+      ),
+      link(
+        "Consulter la question",
+        "/polls/" + item.poll_id + "?network=" + network,
+      ),
+    );
+  for (const item of items) cards.append(card(item));
+  const more = button(
+    "Charger les actualités suivantes",
+    async () => {
+      const page = await getNews(notificationRoot!, network, cursor);
+      for (const item of page.items) {
+        items.push(item);
+        cards.append(card(item));
+      }
+      cursor = page.next_cursor;
+      more.hidden = !cursor;
+      await write("public", key, {
+        items,
+        cursor,
+        source: page.source_available,
+        time: Date.now(),
+      });
+    },
+    "secondary",
+  );
+  more.hidden = !cursor || cached;
+  renderPage(
+    viewGeneration,
+    header(
+      "Suivre le registre",
+      "Les actualités",
+      "Les ouvertures de scrutin restent consultables, avec ou sans Push et sans créer de compte.",
+    ),
+    el(
+      "p",
+      { class: "source-note" },
+      cached
+        ? "Actualités en cache · dernière collecte : " + date(String(time))
+        : source
+          ? "Annonces collectées après vérification des ouvertures finalisées. Ouvrez le dossier pour consulter les preuves et le statut courant."
+          : "La source est indisponible ou le service n’est pas configuré. Les annonces conservées restent consultables.",
+    ),
+    cards,
+    items.length
+      ? null
+      : el(
+          "p",
+          { class: "empty" },
+          "Aucune ouverture de scrutin annoncée pour ce réseau.",
+        ),
+    more,
+    button(
+      "Marquer les annonces affichées comme lues",
+      async () => {
+        await write(
+          "settings",
+          seenKey,
+          [...new Set([...seen, ...items.map((i) => i.event_id)])].slice(-1000),
+        );
+        await newsPage();
+      },
+      "quiet",
+    ),
+    await notificationControls(),
+  );
+}
 async function verification() {
+  const viewGeneration = generation;
+
   const file = el("input", {
       type: "file",
       accept: ".json,application/json",
@@ -1752,7 +2015,8 @@ async function verification() {
       await receiptPage(v.poll_id, v);
     });
   };
-  setPage(
+  renderPage(
+    viewGeneration,
     header(
       "Contrôler par vous-même",
       "La confiance se vérifie.",
@@ -1809,6 +2073,16 @@ async function route() {
       .filter(Boolean),
     query = new URLSearchParams(location.hash.split("?")[1] ?? "");
   try {
+    const requested = query.get("network");
+    if (requested && requested !== client.network) {
+      const index = choices.findIndex(
+        (c) => c.manifest.network_id === requested,
+      );
+      if (index < 0) throw Error("ERR_NETWORK");
+      networkSelect.value = String(index);
+      await switchNetwork(index);
+      return;
+    }
     await client.refresh();
     account = await loadAccount(client.network);
     if (current !== generation) return;
@@ -1822,6 +2096,7 @@ async function route() {
     else if (parts[0] === "laws" || parts[0] === "roles")
       await objects(parts[0], parts[1]);
     else if (parts[0] === "verify") await verification();
+    else if (parts[0] === "news") await newsPage();
     else location.hash = "/";
     for (const a of document.querySelectorAll<HTMLAnchorElement>("nav a"))
       a.setAttribute(
@@ -1829,6 +2104,7 @@ async function route() {
         a.hash.split("/")[1] === (parts[0] ?? "") ? "page" : "false",
       );
   } catch (e) {
+    if (current !== generation) return;
     flash(errorMessage(e), true);
     setPage(
       header(
@@ -1875,16 +2151,26 @@ async function switchNetwork(index: number) {
   }
 }
 async function start() {
+  let initializing = true,
+    navigationPending = false;
+  window.addEventListener("hashchange", () => {
+    if (initializing) navigationPending = true;
+    else void route();
+  });
   try {
     const res = await fetch("/pwa-config.json", { cache: "no-cache" }),
       config = await res.json();
     if (
-      config.version !== "0.7.0" ||
+      config.version !== "0.8.0" ||
       !Array.isArray(config.networks) ||
       !config.networks.length
     )
       throw Error("ERR_VERSION");
     choices = config.networks;
+    notificationRoot =
+      config.notifications?.api_root === "/notifications"
+        ? "/notifications"
+        : null;
     development = !!config.development;
     for (const [index, c] of choices.entries())
       networkSelect.append(el("option", { value: String(index) }, c.name));
@@ -1893,14 +2179,8 @@ async function start() {
     const old = Number((await read<string>("settings", "network")) ?? "0");
     networkSelect.value = String(old < choices.length ? old : 0);
     await switchNetwork(Number(networkSelect.value));
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      if (registration.waiting)
-        flash(
-          "Une nouvelle version est disponible. Terminez votre opération puis rechargez la page.",
-        );
-    }
-    window.addEventListener("hashchange", () => void route());
+    initializing = false;
+    if (navigationPending) await route();
     document.addEventListener("click", (event) => {
       const a = (event.target as Element).closest<HTMLAnchorElement>(
         'a[href^="#/"]',
@@ -1928,6 +2208,19 @@ async function start() {
           await route();
         }),
     );
+    if ("serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
+        if (registration.waiting)
+          flash(
+            "Une nouvelle version est disponible. Terminez votre opération puis rechargez la page.",
+          );
+      } catch {
+        flash(
+          "Le mode hors ligne n’a pas pu être activé. Les fonctions en ligne restent accessibles.",
+        );
+      }
+    }
   } catch (e) {
     flash(errorMessage(e), true);
     setPage(

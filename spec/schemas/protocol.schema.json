@@ -8578,6 +8578,180 @@
         "ciphertext"
       ],
       "additionalProperties": false
+    },
+    "push_keys": {
+      "type": "object",
+      "properties": {
+        "p256dh": {
+          "type": "string",
+          "minLength": 87,
+          "maxLength": 87,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "auth": {
+          "type": "string",
+          "minLength": 22,
+          "maxLength": 22,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [
+        "p256dh",
+        "auth"
+      ],
+      "additionalProperties": false
+    },
+    "push_subscription": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "unsubscribe_secret": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "endpoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "keys": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/push_keys"
+        },
+        "networks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "v",
+        "subscription_id",
+        "unsubscribe_secret",
+        "endpoint",
+        "keys",
+        "networks",
+        "enabled"
+      ],
+      "additionalProperties": false
+    },
+    "push_unsubscribe": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "unsubscribe_secret": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "v",
+        "subscription_id",
+        "unsubscribe_secret"
+      ],
+      "additionalProperties": false
+    },
+    "push_message": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "type": {
+          "const": "poll.opened"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "closes_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "v",
+        "type",
+        "event_id",
+        "network_id",
+        "poll_id",
+        "closes_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "news_item": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "type": {
+          "const": "poll.opened"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "closes_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "proposal_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "opened_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "source_height": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "v",
+        "type",
+        "event_id",
+        "network_id",
+        "poll_id",
+        "closes_at_ms",
+        "proposal_id",
+        "opened_at_ms",
+        "source_height"
+      ],
+      "additionalProperties": false
     }
   }
 }

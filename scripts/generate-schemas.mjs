@@ -5,6 +5,7 @@ import { electionguardSchemas } from "./electionguard-schemas.mjs";
 import { consensusSchemas } from "./consensus-schemas.mjs";
 import { citizenSchemas } from "./citizen-schemas.mjs";
 import { pwaSchemas } from "./pwa-schemas.mjs";
+import { notificationSchemas } from "./notification-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -242,6 +243,7 @@ electionguardSchemas(definitions, { object, list, ref, id, uint, constant });
 consensusSchemas(definitions, { object, list, ref, id, uint, constant });
 citizenSchemas(definitions, { object, list, ref, id, uint, constant });
 pwaSchemas(definitions, { object, list, ref, id, uint, constant });
+notificationSchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",
@@ -328,6 +330,11 @@ for (const key of [
   "pwa_backup_secrets",
   "pwa_backup",
   "submission",
+  "push_keys",
+  "push_subscription",
+  "push_unsubscribe",
+  "push_message",
+  "news_item",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

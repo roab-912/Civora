@@ -1,0 +1,217 @@
+{
+  "milestone": "v0.8",
+  "date": "2026-11-06",
+  "status": "implemented_development",
+  "public_pilot_qualified": false,
+  "external_push_delivery_qualified": false,
+  "physical_ios_qualified": false,
+  "decision": "spec/decisions/0014-notifications-v0.8.md",
+  "implementation": {
+    "service": "services/notifications",
+    "protocol_registry_changed": false,
+    "consent": "Explicit user gesture; subscription independent of civic accounts and voting keys",
+    "push": "RFC 8291 aes128gcm, RFC 8292 ES256 VAPID, RFC 8030 TTL and status handling",
+    "journal": "SQLite WAL/FULL; atomic news, unique (subscription_id,event_id) jobs and cursor projection; retry leases, backoff, expiry, authenticated unsubscribe",
+    "news": "Authenticated H+1 opening proofs, pinned genesis, clock and cursor rollback refusal, public inbox and offline cache",
+    "browser": "Service worker deduplication, generic lock-screen message, network-bound question deep link, explicit preferences and iOS installation guidance",
+    "destination_policy": "Public HTTPS:443 only, validated and pinned DNS answers, no redirects or environment proxy"
+  },
+  "toolchain": {
+    "node": "24.12.0",
+    "npm": "11.10.0",
+    "go": "go1.27.3 windows/amd64",
+    "playwright": "1.64.1",
+    "sqlite_builtin_experimental": true
+  },
+  "verification": {
+    "full_gate": {
+      "command": "./scripts/check.ps1",
+      "passed": true,
+      "exit_code": 0,
+      "local_log": ".tools/v0.8-check.log",
+      "typescript_tests_at_gate": 146,
+      "coverage": [
+        "Go tests normal and civora_sim",
+        "Go vet normal and civora_sim",
+        "historical fixtures v0.1-v0.7 and cryptographic locks",
+        "native CometBFT quorum, rotation, activation and abrupt restart",
+        "native citizen observer restart and index rebuild",
+        "PWA desktop/mobile workflows",
+        "notification browser workflows",
+        "deterministic historical replay, resume and independent encrypted archive audits"
+      ]
+    },
+    "final_typescript": {
+      "command": "npm test",
+      "passed": true,
+      "tests": 149,
+      "notification_unit_tests": 19,
+      "local_log": ".tools/v0.8-typescript-final.log",
+      "includes": [
+        "RFC 8291 official vector and independent Web Crypto decryption",
+        "VAPID JWT verification and fixed-width private scalar encoding",
+        "SSRF refusals",
+        "strict privacy schemas and per-subscription Topic",
+        "atomic outbox, idempotent replay and SIGKILL before/after commit",
+        "retry, expiration and provider invalidation",
+        "unsubscribe capability, tombstones and preferences",
+        "source pin, cursor and authenticated clock rollback refusal",
+        "inbox remains responsive while provider is blocked"
+      ]
+    },
+    "final_schemas_and_format": {
+      "passed": true,
+      "commands": [
+        "npm run schemas:check",
+        "npm run format:check"
+      ],
+      "local_log": ".tools/v0.8-format-final.log"
+    },
+    "build": {
+      "passed": true,
+      "reproduced_byte_for_byte": true,
+      "manifest_sha256": "5cbb79799e35e65e0ad790265449877fbfae6221949fcab16daba077c4fe2c2e",
+      "assets": {
+        "app.css": {
+          "sha256": "8f51e0b2ae1ca2fcf1539e6648b3f1f29930cee1b65b315a065fed3c46f4b3b6",
+          "size": "10564"
+        },
+        "app.js": {
+          "sha256": "414b4c97f586134ca59914afa1259883da80d52337571ce92d804796acac133f",
+          "size": "2194050"
+        },
+        "icon-192.png": {
+          "sha256": "2f0df6fe9670e3492de438f04d374bc02d74a612c736e6aab9f8855e05cd203a",
+          "size": "7745"
+        },
+        "icon-512.png": {
+          "sha256": "423f0b3fc8310342d35e149ec37c7df783134dcebf66de72f7b0fd66d9f2cb7d",
+          "size": "21708"
+        },
+        "icon.svg": {
+          "sha256": "fb8bd0b61615752e9bfc4153e08c3e53bf8dc017c81b5c5828fe13fb62afaaca",
+          "size": "403"
+        },
+        "index.html": {
+          "sha256": "f2b18f6a09404219825ea31ca533bb20e6f4334da8cab43fc6c7b540d911f439",
+          "size": "1867"
+        },
+        "manifest.webmanifest": {
+          "sha256": "4526f89f5679d267290d9baa0f98899800c3d526a07c5a6c981e505473e68ae3",
+          "size": "610"
+        },
+        "sw.js": {
+          "sha256": "7941d4900f6313cbff24d408730f0dc9c2e979fd4b402167bb9c7c1583b35907",
+          "size": "31926"
+        },
+        "worker.js": {
+          "sha256": "3e9baa7877996bc10e90a3d276ae03c175ce7c74dc1808f2d9d15df8a4c1336d",
+          "size": "2487127"
+        }
+      },
+      "local_evidence": ".tools/v0.8-build-reproducible.json"
+    }
+  },
+  "acceptance": {
+    "notifications": {
+      "milestone": "v0.8",
+      "mode": "PUBLIC_TEST_ONLY_PROVIDER_AND_BROWSER_SUBSCRIPTION_REAL_FINALITY_AND_SW",
+      "physical_ios": false,
+      "checks": [
+        "consent-is-explicit-and-subscription-needs-no-civic-account",
+        "native-finalised-opening-creates-one-outbox-delivery-and-public-news",
+        "real-service-worker-handles-test-PushEvent-with-generic-notification-and-refuses-duplicates-expired-foreign-and-extra-fields",
+        "notification-deep-link-opens-the-authenticated-question-without-casting-a-vote",
+        "unsubscribe-stops-future-push-without-removing-news",
+        "permission-refusal-leaves-public-inbox-accessible",
+        "offline-public-news-cache-remains-readable",
+        "WebKit-iPhone-emulation-explains-home-screen-installation-and-keeps-news-readable"
+      ],
+      "passed": true,
+      "checks_count": 8,
+      "local_evidence": ".tools/qualification/notifications-1793976397058/report.json",
+      "local_log": ".tools/v0.8-notifications-final.log",
+      "screenshots": [
+        ".tools/qualification/notifications-1793976397058/desktop-news.png",
+        ".tools/qualification/notifications-1793976397058/ios-news.png"
+      ]
+    },
+    "pwa_regression": {
+      "passed": true,
+      "checks_count": 18,
+      "local_evidence": ".tools/qualification/pwa-1793974829487/report.json"
+    },
+    "native_consensus": {
+      "passed": true,
+      "checks_count": 14,
+      "local_evidence": ".tools/acceptance/network-2c12741e-45ef-488b-95c4-d0e3791ee840/report.json"
+    },
+    "citizen_observer": {
+      "passed": true,
+      "checks": [
+        "fourteen-native-validator-processes",
+        "anonymous-main-and-lane-P2P-sync",
+        "historical-absence-verified-independently-in-TypeScript",
+        "genesis-replay",
+        "abrupt-observer-restart-and-index-rebuild",
+        "no-account-or-consensus-private-key"
+      ],
+      "local_evidence": ".tools/acceptance/citizen-7863d63c-1db0-4100-9827-6f4ec0f2c514/report.json"
+    },
+    "lan": {
+      "passed": true,
+      "url": "https://192.168.1.40:8791",
+      "tls_ca_and_ip_verified": true,
+      "foreign_origin_refused": true,
+      "same_origin_post_forwarded": true,
+      "web_crypto_available": true,
+      "encrypted_backup_created_and_downloaded": true,
+      "account_registered": false,
+      "local_evidence": ".tools/v0.8-lan-final.log"
+    },
+    "existing_workshop": {
+      "passed": true,
+      "version": "0.8.0",
+      "existing_workshop_preserved": true,
+      "manifests_unchanged": true,
+      "networks": [
+        {
+          "network_id": "a051b6bedf50660da1e45b7642ec75d78800b43b0a43751c395ca6f055f044c6",
+          "genesis": {
+            "sha256": "ca4976c4174bcb05d27925a02598c5c4d93de441edad12d6b0d3644aead3e9d4",
+            "size": "6960"
+          },
+          "news_count": 2,
+          "source_available": true
+        },
+        {
+          "network_id": "b2852bcc18cdd1a481deb563eb7ca13e4d0cb202681edd1b7735b08747b1dd5f",
+          "genesis": {
+            "sha256": "718b9f2dd90b8192ff7c11f8d5c8c8a01cdb2d2006339191b03ab10e583f567e",
+            "size": "12610"
+          },
+          "news_count": 1,
+          "source_available": true
+        }
+      ],
+      "local_evidence": ".tools/v0.8-live-final.json"
+    }
+  },
+  "fixtures": {
+    "spec/fixtures/v0.8/webpush-rfc8291.TEST_ONLY.json": {
+      "sha256": "a43e23af3d6c3dc2ac1b610377b924e06f954bf3a2a160b57df7d676b7be9cc1",
+      "size": "808"
+    }
+  },
+  "limitations": [
+    "Browser acceptance mocks the browser Push subscription and provider, then injects a test PushEvent into the actual service worker; no external provider delivery is claimed.",
+    "WebKit iPhone emulation verifies installation guidance; physical iPhone/iPad installation and delivery remain unqualified.",
+    "The default VAPID contact is development-only (.invalid); real sending requires an operator contact and Internet access to the browser provider.",
+    "Workshop guardians and linked commits use explicitly identified PUBLIC_TEST_ONLY keys; the public pilot and voting cryptography retain their existing qualification limits.",
+    "SQLite is experimental in the locked Node version. Abrupt process exit was tested on Windows; electrical power loss was not qualified.",
+    "The discovery API cannot prove completeness. Pinned genesis and authenticated proofs prevent fabricated announcements; an indexer can omit an opening.",
+    "An accepted provider request and the local delivery commit cannot be atomic. A crash at that boundary can repeat a delivery; the job and browser deduplication remain idempotent.",
+    "Subscription data can reveal followed networks. It remains off-chain and separate from accounts and ballots.",
+    "Public deployment, signed releases, emergency tooling, external audits and mass-load qualification remain in later milestones."
+  ]
+}

@@ -3,6 +3,7 @@
 import { createServer } from "node:http";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, dirname, join, extname } from "node:path";
+import { NotificationService } from "../dist/services/notifications/service.js";
 const args = process.argv.slice(2),
   get = (n, d = "") => {
     const i = args.indexOf(n);
@@ -22,7 +23,8 @@ const networks = config.networks.map((entry, i) => {
   return {
     name: entry.name ?? manifest.name,
     manifest,
-    development_clock: false,
+    development_clock:
+      config.development === true && entry.development_clock === true,
     api_roots: origins.map((origin, j) => {
       const url = new URL(origin);
       if (
@@ -39,7 +41,19 @@ const networks = config.networks.map((entry, i) => {
     }),
   };
 });
-const directory = resolve(".tools/pwa/public"),
+const notifications = new NotificationService({
+  directory: resolve(
+    config.notifications?.directory ?? ".dev-host/pwa-notifications",
+  ),
+  watches: networks.map((n, i) => ({
+    ...n,
+    api_roots: n.api_roots.map((_p, j) => routes.get(`n${i}s${j}`)),
+  })),
+  ...(config.notifications?.contact
+    ? { contact: config.notifications.contact }
+    : {}),
+});
+const directory = resolve(".tools/pwa/v0.8/public"),
   mime = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -49,6 +63,20 @@ const directory = resolve(".tools/pwa/public"),
     ".json": "application/json",
     ".webmanifest": "application/manifest+json",
   };
+const developmentUpstream =
+  config.development === true && config.development_upstream
+    ? new URL(config.development_upstream)
+    : null;
+if (
+  developmentUpstream &&
+  (developmentUpstream.protocol !== "http:" ||
+    developmentUpstream.hostname !== "127.0.0.1" ||
+    developmentUpstream.username ||
+    developmentUpstream.password)
+)
+  throw Error(
+    "Development upstream must be the explicitly selected loopback workshop",
+  );
 const server = createServer(async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -72,10 +100,43 @@ const server = createServer(async (req, res) => {
       res.end();
       return;
     }
+    if (await notifications.handle(req, res, url.pathname)) return;
+    if (
+      developmentUpstream &&
+      url.pathname === "/__dev/advance" &&
+      req.method === "POST"
+    ) {
+      const chunks = [];
+      let size = 0;
+      for await (const c of req) {
+        size += c.length;
+        if (size > 4096) throw Error("capacity");
+        chunks.push(c);
+      }
+      const response = await fetch(
+        new URL("/__dev/advance", developmentUpstream),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: Buffer.concat(chunks),
+          redirect: "error",
+          signal: AbortSignal.timeout(60000),
+        },
+      );
+      res.statusCode = response.status;
+      res.setHeader("Content-Type", "application/json");
+      res.end(Buffer.from(await response.arrayBuffer()));
+      return;
+    }
     if (url.pathname === "/pwa-config.json") {
       res.setHeader("Content-Type", "application/json");
       res.end(
-        JSON.stringify({ version: "0.7.0", networks, development: false }),
+        JSON.stringify({
+          version: "0.8.0",
+          networks,
+          development: config.development === true,
+          notifications: { api_root: "/notifications" },
+        }),
       );
       return;
     }

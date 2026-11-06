@@ -1,5 +1,22 @@
 {
-  "profile": "development-v0.7-with-v0.1-v0.2-v0.3-v0.4-v0.5-v0.6-replay",
+  "profile": "development-v0.8-with-v0.1-v0.2-v0.3-v0.4-v0.5-v0.6-v0.7-replay",
+  "notifications_v0_8": {
+    "application_version": "0.8.0",
+    "wire_version": "1",
+    "service": "services/notifications",
+    "storage": "node:sqlite WAL synchronous=FULL",
+    "node_sqlite_experimental": true,
+    "encryption": "RFC8291 aes128gcm P-256 HKDF-SHA256 AES128-GCM",
+    "authentication": "RFC8292 VAPID ES256",
+    "source": "proposal.open normalised to poll.opened with state H/header H+1 proofs",
+    "event_id": "D(push/poll.opened,[network_id,poll_id])",
+    "fixture": "spec/fixtures/v0.8/webpush-rfc8291.TEST_ONLY.json",
+    "acceptance": "npm run test:notifications",
+    "decision": "spec/decisions/0014-notifications-v0.8.md",
+    "physical_ios_qualified": false,
+    "external_push_provider_delivery_qualified": false,
+    "public_pilot_qualified": false
+  },
   "pwa_v0_7": {
     "application_version": "0.7.0",
     "profiles": ["inline_dev", "transport_dev_v0_6"],

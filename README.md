@@ -1,6 +1,6 @@
-# Civora — PWA de développement v0.7
+# Civora — PWA et notifications de développement v0.8
 
-Implémentation de développement des jalons v0.1 à v0.7 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+Implémentation de développement des jalons v0.1 à v0.8 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
 
 Pour ouvrir la PWA sur **http://127.0.0.1:8790** :
 
@@ -14,7 +14,32 @@ Go ≥ 1.26 et Node ≥ 24.12 sont nécessaires. Le lanceur utilise `.tools/go` 
 
 L’atelier utilise **des clés publiques TEST_ONLY et des commits synthétiques signés**. Les transitions du noyau, le chiffrement et les preuves sont réels. Un deuxième réseau donne accès au dossier partitionné et certifié v0.6, en lecture historique. Cette démonstration ne constitue pas un réseau de production ni une qualification du pilote public.
 
+Depuis un autre ordinateur du même Wi-Fi, Web Crypto nécessite **HTTPS** : une adresse `http://192.168.…` ne permet pas de créer un coffre ni de chiffrer un bulletin. Après `npm run dev`, démarrer dans un autre terminal, avec l’adresse IPv4 Wi-Fi de ce PC et OpenSSL installé (celui de Git pour Windows est détecté) :
+
+```sh
+npm run dev:lan -- --host 192.168.1.40
+```
+
+Ouvrir **http://192.168.1.40:8790/__lan/** sur l’autre poste. Télécharger le certificat local ; sous Windows, ouvrir le fichier et choisir « Installer le certificat » → « Utilisateur actuel » → « Autorités de certification racines de confiance ». Fermer puis rouvrir le navigateur et utiliser **https://192.168.1.40:8791**. Firefox peut demander l’import dans les autorités de son propre gestionnaire de certificats. Le certificat et les clés TLS sont créés dans `.tools/pwa/lan-tls/`, sans installation automatique dans le système. Seul le certificat public est téléchargeable. L’empreinte de l’autorité est affichée dans le terminal du PC serveur, à comparer avec le certificat reçu. Ce réglage concerne l’atelier sur le réseau local ; l’hébergement public reste hors périmètre.
+
+Le pont conserve la session du serveur sur `127.0.0.1:8790`. Il écoute uniquement sur l’adresse privée choisie, accepte le sous-réseau local, refuse les POST d’autres origines et redirige les lectures HTTP vers HTTPS. Son port HTTP sert la page d’installation du certificat. Les comptes enregistrés dans le navigateur restent propres à leur origine : pour retrouver un compte d’une autre adresse, importer sa sauvegarde chiffrée et son code. Contrôle ciblé, sans inscription supplémentaire : `npm run test:pwa:lan -- --url https://192.168.1.40:8791`.
+
 La PWA permet de créer un compte, télécharger sa sauvegarde chiffrée et son code séparé, récupérer le compte sur un autre navigateur, tourner ou retirer ses clés, proposer et soutenir une décision, voter, télécharger et vérifier son reçu, contrôler le résultat, consulter les révisions des lois et gérer les rôles par de nouveaux votes. Les calculs cryptographiques s’exécutent dans un worker. Hors ligne, les données publiques déjà consultées portent la date de synchronisation ; aucun vote n’est envoyé automatiquement au retour de la connexion.
+
+L’onglet **Actualités** présente les ouvertures de scrutin, sans compte et même si les notifications sont refusées. Dans **Mon compte** ou au bas des actualités, choisir les réseaux puis cliquer sur **Activer les notifications** : aucune autorisation n’est demandée à l’ouverture de la page. Le message sur l’écran verrouillé reste générique : « Nouveau référendum. Consulter la question ». Son clic ouvre le dossier du bon réseau, sans envoyer de vote. Les préférences et la désinscription sont accessibles au même endroit. Sur iPhone/iPad compatible, installer d’abord l’application par **Partager → Sur l’écran d’accueil** ; les actualités restent lisibles sans installation.
+
+Le serveur de notifications conserve abonnements, curseurs et tâches dans une base SQLite distincte du registre. Il contrôle les preuves des ouvertures finalisées, reprend après arrêt, réessaie les erreurs transitoires jusqu’à la clôture et supprime les abonnements invalides. Les clés civiques et les bulletins ne lui sont pas transmis. Un fournisseur Push indisponible ne bloque pas la lecture des actualités. La clé VAPID est générée localement et reste dans le répertoire privé du service ; ne pas publier ce répertoire. Pour de vrais envois, renseigner le contact opérateur, par exemple `npm run dev -- --push-contact mailto:contact@example.org` ou `CIVORA_PUSH_CONTACT`. Le contact par défaut est réservé au développement. Les services Push du navigateur nécessitent un accès Internet ; les actualités utilisent le réseau local.
+
+Pour conserver un atelier déjà lancé pendant la mise à jour de son interface :
+
+```sh
+npm run dev:attach -- --upstream http://127.0.0.1:8790 --port 8794
+npm run dev:lan -- --host 192.168.1.40 --upstream http://127.0.0.1:8794
+```
+
+Arrêter l’ancien pont Wi-Fi avant de relancer le second ; conserver le serveur d’atelier. Le nouveau pont réutilise le certificat local et la même adresse HTTPS, donc le coffre du navigateur reste sous la même origine. Fermer les anciens onglets puis rouvrir l’application termine la mise à jour du service worker. L’interface v0.8 est construite dans `.tools/pwa/v0.8/public`, séparément des assets de l’ancienne session.
+
+Contrôle ciblé : `npm run test:notifications`. Il vérifie les vecteurs RFC 8291, VAPID, les refus de destinations internes, les doublons, les délais, le désabonnement, SQLite après arrêt brutal et le parcours dans Chromium complet et WebKit en émulation iPhone. Les abonnements et le fournisseur sont **TEST_ONLY** dans ce test ; aucun Push n’est envoyé à un service externe. L’installation sur des iPhone/iPad physiques et la livraison par les fournisseurs réels restent à qualifier. Voir la [décision 0014](spec/decisions/0014-notifications-v0.8.md) et le [rapport v0.8](spec/reports/v0.8-notifications.json).
 
 Pour utiliser des nœuds existants, authentifier leur manifeste puis créer un fichier de configuration à partir de [pwa-networks.example.json](pwa-networks.example.json) :
 
@@ -24,7 +49,7 @@ npm run pwa:host -- --config pwa-networks.example.json
 
 Ce serveur d’interface écoute sur **http://127.0.0.1:8792** et relaie les API configurées ; il ne lance aucun gardien ni contrôle d’atelier. L’exemple utilise les deux archives du lanceur `citizen.ps1` ci-dessous. Leur état figé est signalé comme périmé et les écritures restent bloquées. La genèse configurée est le point de confiance initial, à comparer par un canal indépendant. L’hébergement public, HTTPS et la distribution signée relèvent des jalons ultérieurs.
 
-Acceptation PWA : `npm run browsers:install`, puis `npm run test:pwa`. Le test exécute le parcours complet dans Chromium sur ordinateur et WebKit en émulation iPhone, avec import de sauvegarde entre les deux moteurs, six votes réels, lois et rôles, refus des contextes étrangers, reçu et cache hors ligne. Les captures et rapports locaux restent dans `.tools/qualification/pwa-*`. Les [choix d’interopérabilité](spec/decisions/0013-pwa-v0.7.md) et le [rapport v0.7](spec/reports/v0.7-pwa.json) précisent les limites : appareils physiques et audit externe non qualifiés, absence de garantie de temps constant ou d’effacement des secrets JavaScript. Les notifications restent au jalon v0.8.
+Acceptation PWA : `npm run browsers:install`, puis `npm run test:pwa`. Le test exécute le parcours complet dans Chromium sur ordinateur et WebKit en émulation iPhone, avec import de sauvegarde entre les deux moteurs, six votes réels, lois et rôles, refus des contextes étrangers, reçu et cache hors ligne. Les captures et rapports locaux restent dans `.tools/qualification/pwa-*`. Les [choix d’interopérabilité](spec/decisions/0013-pwa-v0.7.md) et le [rapport v0.7](spec/reports/v0.7-pwa.json) précisent les limites : appareils physiques et audit externe non qualifiés, absence de garantie de temps constant ou d’effacement des secrets JavaScript. Les notifications v0.8 sont décrites ci-dessus.
 
 Pour lancer l'hôte citoyen avec deux archives locales et une réplique anonyme du registre et de la partition 0 :
 
@@ -159,4 +184,4 @@ Pour v0.5 : `npm run fixtures:partitions:check`, puis `go run ./cmd/civnet fixtu
 
 Les décisions sont consignées dans [spec/decisions](spec/decisions/0011-consensus-partitions-v0.5.md), avec formats de preuve, persistance et limites de qualification. Les ports `EligibilityProvider`, `MembershipVerifier`, `VotingCrypto` et `EffectAdapter` restent distincts. L'effet inline courant est `ledger_only_v1` ; le résultat partitionné reste provisoire. Les archives n'incluent ni les fichiers `TEST_ONLY`, ni les nonces, ni les choix individuels. La genèse doit être authentifiée ; un export local n'est pas une preuve de consensus.
 
-Les rotations et activations testées sont préautorisées par genèse de développement, hors scrutin actif. L'approbation institutionnelle et l'armement coordonné multichaîne restent à qualifier. Les archives sélectives, audits et relais sont implémentés en v0.6 et la PWA en v0.7. Les notifications, le déploiement et les outils d'urgence restent aux jalons suivants. Le stockage local est prévu pour un seul écrivain ; les tests Windows qualifient l'arrêt de processus, pas une coupure électrique.
+Les rotations et activations testées sont préautorisées par genèse de développement, hors scrutin actif. L'approbation institutionnelle et l'armement coordonné multichaîne restent à qualifier. Les archives sélectives, audits et relais sont implémentés en v0.6 et la PWA en v0.7. Les notifications sont implémentées en v0.8 ; le déploiement et les outils d'urgence restent aux jalons suivants. Le stockage local est prévu pour un seul écrivain ; les tests Windows qualifient l'arrêt de processus, pas une coupure électrique.

@@ -342,6 +342,24 @@ func (a *API) detail(w http.ResponseWriter, v *View, resource, id string) {
 					}
 				}
 				row["versions"] = versions
+				if resource == "roles" {
+					grants := []any{}
+					for _, entry := range v.Entries {
+						if entry.Table != "grants" {
+							continue
+						}
+						var tuple []string
+						if json.Unmarshal(codec.Must(entry.Key), &tuple) != nil || len(tuple) != 2 || tuple[0] != id {
+							continue
+						}
+						value := map[string]any{}
+						_ = json.Unmarshal(codec.Must(entry.Value), &value)
+						value["id"] = tuple[1]
+						value["proof"] = map[string]any{"table": "grants", "key": base64.RawURLEncoding.EncodeToString(codec.Must(entry.Key)), "height": v.Height}
+						grants = append(grants, value)
+					}
+					row["grants"] = grants
+				}
 			}
 			row["height"] = v.Height
 			row["proof"] = map[string]any{"table": e.Table, "key": base64.RawURLEncoding.EncodeToString(codec.Must(e.Key)), "height": v.Height}
@@ -370,12 +388,21 @@ func (a *API) list(w http.ResponseWriter, r *http.Request, reader *Reader, lates
 		limit = n
 	}
 	filter := r.URL.Query().Get("status")
+	kind := r.URL.Query().Get("type")
+	if kind != "" && (resource != "proposals" || (kind != "law" && kind != "role")) {
+		failure(w, 400, "ERR_ENCODING", false)
+		return
+	}
+	cursorFilter := filter
+	if kind != "" {
+		cursorFilter += ";type=" + kind
+	}
 	height, _ := codec.Uint(latest.Height)
 	last := ""
 	if s := r.URL.Query().Get("cursor"); s != "" {
 		raw, e := codec.Blob(s)
 		var c cursor
-		if e != nil || codec.Decode(raw, "citizen_cursor", &c) != nil || c.Resource != resource || c.Filter != filter {
+		if e != nil || codec.Decode(raw, "citizen_cursor", &c) != nil || c.Resource != resource || c.Filter != cursorFilter {
 			failure(w, 400, "ERR_ENCODING", false)
 			return
 		}
@@ -408,6 +435,30 @@ func (a *API) list(w http.ResponseWriter, r *http.Request, reader *Reader, lates
 		if filter != "" && filter != status {
 			continue
 		}
+		if kind != "" && !strings.HasPrefix(fmt.Sprint(row["action"]), kind+".") {
+			continue
+		}
+		if resource == "laws" || resource == "roles" {
+			for _, revision := range view.Entries {
+				if revision.Table != "revisions" {
+					continue
+				}
+				var tuple []string
+				if json.Unmarshal(codec.Must(revision.Key), &tuple) == nil && len(tuple) == 3 && tuple[1] == row["id"] && tuple[2] == row["revision"] {
+					var rev struct {
+						Content map[string]any `json:"content"`
+					}
+					if json.Unmarshal(codec.Must(revision.Value), &rev) == nil {
+						if resource == "laws" {
+							row["title"] = rev.Content["title"]
+						} else {
+							row["title"] = rev.Content["label"]
+						}
+					}
+					break
+				}
+			}
+		}
 		items = append(items, row)
 		row["proof"] = map[string]any{"table": entry.Table, "key": base64.RawURLEncoding.EncodeToString(codec.Must(entry.Key)), "height": view.Height}
 	}
@@ -437,7 +488,7 @@ func (a *API) list(w http.ResponseWriter, r *http.Request, reader *Reader, lates
 		page = append(page, row)
 		if len(page) == limit {
 			if i+1 < len(items) {
-				next = base64.RawURLEncoding.EncodeToString(codec.Must(cursor{view.Height, id, resource, filter}))
+				next = base64.RawURLEncoding.EncodeToString(codec.Must(cursor{view.Height, id, resource, cursorFilter}))
 			}
 			break
 		}

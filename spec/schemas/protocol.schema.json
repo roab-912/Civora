@@ -8444,6 +8444,140 @@
         "public_key"
       ],
       "additionalProperties": false
+    },
+    "pwa_local_account": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signing_seed": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "prior_identities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "maxItems": 32
+        }
+      },
+      "required": [
+        "network_id",
+        "account_id",
+        "signing_seed",
+        "identity",
+        "prior_identities"
+      ],
+      "additionalProperties": false
+    },
+    "pwa_backup_secrets": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "account_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signing_seed": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "prior_identities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "maxItems": 32
+        },
+        "recovery_seed": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "network_id",
+        "account_id",
+        "signing_seed",
+        "identity",
+        "prior_identities",
+        "recovery_seed"
+      ],
+      "additionalProperties": false
+    },
+    "pwa_backup": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "type": "object",
+          "properties": {
+            "v": {
+              "const": "1"
+            },
+            "network_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "account_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "v",
+            "network_id",
+            "account_id"
+          ],
+          "additionalProperties": false
+        },
+        "salt": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 43,
+          "minLength": 43
+        },
+        "iv": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 16,
+          "minLength": 16
+        },
+        "ciphertext": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]+$",
+          "maxLength": 262144
+        }
+      },
+      "required": [
+        "header",
+        "salt",
+        "iv",
+        "ciphertext"
+      ],
+      "additionalProperties": false
     }
   }
 }

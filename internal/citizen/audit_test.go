@@ -124,6 +124,23 @@ func TestCitizenRecordReceiptsArchivesAndChallengePriority(t *testing.T) {
 			if res.Code != 200 || !strings.Contains(res.Body.String(), "\"status\":\"replicated\"") || !strings.Contains(res.Body.String(), "\"counting_status\":\""+d.Status+"\"") {
 				t.Fatal(res.Code, res.Body.String())
 			}
+			var receipt struct {
+				Anchor  citizen.StateProof `json:"anchor"`
+				Witness state.Witness      `json:"status_witness"`
+			}
+			if e := json.Unmarshal(res.Body.Bytes(), &receipt); e != nil {
+				t.Fatal(e)
+			}
+			var anchor partition.Verified
+			if e := json.Unmarshal(codec.Must(receipt.Anchor.Path.Entry.Value), &anchor); e != nil {
+				t.Fatal(e)
+			}
+			if e := state.VerifyWitness(anchor.Summary.StatusRoot, receipt.Witness); e != nil {
+				t.Fatal("unverifiable counting status", e)
+			}
+			if !receipt.Witness.Exists {
+				t.Fatal("missing counting status")
+			}
 		}
 	})
 	t.Run("membership-path-and-locally-applied-law", func(t *testing.T) {

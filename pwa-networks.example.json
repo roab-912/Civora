@@ -1,0 +1,9 @@
+{
+  "networks": [
+    {
+      "name": "Archive de développement v0.6 — historique",
+      "manifest": "spec/fixtures/v0.6/network.json",
+      "api_roots": ["http://127.0.0.1:8786", "http://127.0.0.1:8787"]
+    }
+  ]
+}

@@ -15,8 +15,11 @@ func (h *Host) pollHTTP(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	kind := parts[3]
-	if kind != "group" && kind != "membership-path" && kind != "checkpoints" && kind != "context" {
+	if kind != "group" && kind != "membership-path" && kind != "checkpoints" && kind != "context" && kind != "tally" {
 		return false
+	}
+	if reader := h.Readers[h.Manifest.Main.ChainID]; reader != nil && InlinePollHTTP(w, r, reader) {
+		return true
 	}
 	reader, main, e := h.main()
 	if e != nil {
@@ -93,6 +96,20 @@ func (h *Host) pollHTTP(w http.ResponseWriter, r *http.Request) bool {
 		return true
 	}
 	index, e := codec.Uint(r.URL.Query().Get("leaf_index"))
+	if commitment := r.URL.Query().Get("commitment"); commitment != "" {
+		if _, err := eligibility.ParseField(commitment, true); err != nil {
+			failure(w, 400, "ERR_ENCODING", false)
+			return true
+		}
+		index = ^uint64(0)
+		for i, value := range poll.Commitments {
+			if value == commitment {
+				index = uint64(i)
+				break
+			}
+		}
+		e = nil
+	}
 	if e != nil {
 		failure(w, 400, "ERR_ENCODING", false)
 		return true

@@ -1,6 +1,30 @@
-# Civora — hôte citoyen de développement v0.6
+# Civora — PWA de développement v0.7
 
-Implémentation de développement des jalons v0.1 à v0.6 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+Implémentation de développement des jalons v0.1 à v0.7 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+
+Pour ouvrir la PWA sur **http://127.0.0.1:8790** :
+
+```sh
+npm ci --ignore-scripts
+npm run artifacts:fetch
+npm run dev
+```
+
+Go ≥ 1.26 et Node ≥ 24.12 sont nécessaires. Le lanceur utilise `.tools/go` s'il existe. Les artefacts Semaphore sont épinglés et contrôlés avant chaque chargement ; après leur premier téléchargement, le parcours fonctionne sans service externe. `npm run dev -- --port 8791` choisit un autre port. Les boutons **Atelier** font avancer explicitement le temps du registre, ouvrent, dépouillent et appliquent les décisions. Chaque lancement crée une session isolée dans `.tools/pwa/sessions/` ; `Ctrl+C` arrête les processus de cette session.
+
+L’atelier utilise **des clés publiques TEST_ONLY et des commits synthétiques signés**. Les transitions du noyau, le chiffrement et les preuves sont réels. Un deuxième réseau donne accès au dossier partitionné et certifié v0.6, en lecture historique. Cette démonstration ne constitue pas un réseau de production ni une qualification du pilote public.
+
+La PWA permet de créer un compte, télécharger sa sauvegarde chiffrée et son code séparé, récupérer le compte sur un autre navigateur, tourner ou retirer ses clés, proposer et soutenir une décision, voter, télécharger et vérifier son reçu, contrôler le résultat, consulter les révisions des lois et gérer les rôles par de nouveaux votes. Les calculs cryptographiques s’exécutent dans un worker. Hors ligne, les données publiques déjà consultées portent la date de synchronisation ; aucun vote n’est envoyé automatiquement au retour de la connexion.
+
+Pour utiliser des nœuds existants, authentifier leur manifeste puis créer un fichier de configuration à partir de [pwa-networks.example.json](pwa-networks.example.json) :
+
+```sh
+npm run pwa:host -- --config pwa-networks.example.json
+```
+
+Ce serveur d’interface écoute sur **http://127.0.0.1:8792** et relaie les API configurées ; il ne lance aucun gardien ni contrôle d’atelier. L’exemple utilise les deux archives du lanceur `citizen.ps1` ci-dessous. Leur état figé est signalé comme périmé et les écritures restent bloquées. La genèse configurée est le point de confiance initial, à comparer par un canal indépendant. L’hébergement public, HTTPS et la distribution signée relèvent des jalons ultérieurs.
+
+Acceptation PWA : `npm run browsers:install`, puis `npm run test:pwa`. Le test exécute le parcours complet dans Chromium sur ordinateur et WebKit en émulation iPhone, avec import de sauvegarde entre les deux moteurs, six votes réels, lois et rôles, refus des contextes étrangers, reçu et cache hors ligne. Les captures et rapports locaux restent dans `.tools/qualification/pwa-*`. Les [choix d’interopérabilité](spec/decisions/0013-pwa-v0.7.md) et le [rapport v0.7](spec/reports/v0.7-pwa.json) précisent les limites : appareils physiques et audit externe non qualifiés, absence de garantie de temps constant ou d’effacement des secrets JavaScript. Les notifications restent au jalon v0.8.
 
 Pour lancer l'hôte citoyen avec deux archives locales et une réplique anonyme du registre et de la partition 0 :
 
@@ -103,7 +127,7 @@ go run ./cmd/civeligibility serve -store .dev-store/eligibility-index -addr 127.
 
 Un rejeu répété sur le même répertoire reprend les blocs durables et vérifie leur identité. Sans `-supported-epoch 2`, le scénario d’activation s’arrête avant le bloc 3. Les CLI acceptent uniquement les genèses `mode:development`, `voting_profile:inline_dev`. Les anciens scénarios v0.1 conservent leurs racines.
 
-Sous Windows, [scripts/check.ps1](scripts/check.ps1) exécute les vérifications, les deux modes de compilation, les contrôles de reproductibilité, les démonstrations, la projection de l'index, les reprises et le réseau natif. `-SkipNetwork` permet un contrôle local partiel. Les scripts utilisent Go installé dans `.tools/go` si disponible.
+Sous Windows, [scripts/check.ps1](scripts/check.ps1) exécute les vérifications, les deux modes de compilation, les contrôles de reproductibilité, les démonstrations, la projection de l'index, les reprises, le réseau natif et la PWA. `-SkipNetwork` et `-SkipPWA` permettent des contrôles partiels. Les scripts utilisent Go installé dans `.tools/go` si disponible.
 
 Pour les preuves dans un Web Worker sur Chromium et WebKit :
 
@@ -135,4 +159,4 @@ Pour v0.5 : `npm run fixtures:partitions:check`, puis `go run ./cmd/civnet fixtu
 
 Les décisions sont consignées dans [spec/decisions](spec/decisions/0011-consensus-partitions-v0.5.md), avec formats de preuve, persistance et limites de qualification. Les ports `EligibilityProvider`, `MembershipVerifier`, `VotingCrypto` et `EffectAdapter` restent distincts. L'effet inline courant est `ledger_only_v1` ; le résultat partitionné reste provisoire. Les archives n'incluent ni les fichiers `TEST_ONLY`, ni les nonces, ni les choix individuels. La genèse doit être authentifiée ; un export local n'est pas une preuve de consensus.
 
-Les rotations et activations testées sont préautorisées par genèse de développement, hors scrutin actif. L'approbation institutionnelle et l'armement coordonné multichaîne restent à qualifier. Les archives sélectives, audits et relais relèvent de v0.6 ; la PWA, le déploiement et les outils d'urgence restent aux jalons suivants. Le stockage local est prévu pour un seul écrivain ; les tests Windows qualifient l'arrêt de processus, pas une coupure électrique.
+Les rotations et activations testées sont préautorisées par genèse de développement, hors scrutin actif. L'approbation institutionnelle et l'armement coordonné multichaîne restent à qualifier. Les archives sélectives, audits et relais sont implémentés en v0.6 et la PWA en v0.7. Les notifications, le déploiement et les outils d'urgence restent aux jalons suivants. Le stockage local est prévu pour un seul écrivain ; les tests Windows qualifient l'arrêt de processus, pas une coupure électrique.

@@ -1,4 +1,4 @@
-param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork)
+param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork,[switch]$SkipPWA)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $projectRoot
@@ -14,6 +14,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'TypeScript formatting differs' }
     & npm.cmd test
     if ($LASTEXITCODE -ne 0) { throw 'TypeScript tests failed' }
+    & node scripts/generate-pwa-fixtures.mjs --check
+    if ($LASTEXITCODE -ne 0) { throw 'Browser encryption fixtures differ' }
+    & node scripts/build-pwa.mjs
+    if ($LASTEXITCODE -ne 0) { throw 'PWA browser build failed' }
     & node scripts/check-semaphore.mjs
     if ($LASTEXITCODE -ne 0) { throw 'Semaphore lock verification failed' }
     & node scripts/generate-eligibility-fixtures.mjs --check
@@ -60,6 +64,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native CometBFT acceptance failed' }
         & node scripts/test-citizen-native.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Native citizen host acceptance failed' }
+    }
+    if (-not $SkipPWA) {
+        & node scripts/test-pwa.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'PWA desktop/mobile acceptance failed' }
     }
     $runDirectory = Join-Path $projectRoot ('.tools/acceptance/' + [guid]::NewGuid().ToString('N'))
     $accountsStore = Join-Path $runDirectory 'accounts'

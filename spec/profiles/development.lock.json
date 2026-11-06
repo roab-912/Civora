@@ -1,5 +1,20 @@
 {
-  "profile": "development-v0.6-with-v0.1-v0.2-v0.3-v0.4-v0.5-replay",
+  "profile": "development-v0.7-with-v0.1-v0.2-v0.3-v0.4-v0.5-v0.6-replay",
+  "pwa_v0_7": {
+    "application_version": "0.7.0",
+    "profiles": ["inline_dev", "transport_dev_v0_6"],
+    "protocol_epochs": ["1", "2"],
+    "state_schema": "1",
+    "browser_buffer": "6.0.3",
+    "browser_hashes": "1.3.2",
+    "browser_build": "npm run build:pwa",
+    "acceptance": "npm run test:pwa",
+    "fixtures": "spec/fixtures/v0.7/browser-crypto.json",
+    "fixture_secrets": "spec/fixtures/v0.7/browser-encryption.TEST_ONLY.json",
+    "decision": "spec/decisions/0013-pwa-v0.7.md",
+    "public_pilot_qualified": false,
+    "physical_devices_qualified": false
+  },
   "citizen_v0_6": {
     "profile": "transport_dev_v0_6",
     "mode": "archive",

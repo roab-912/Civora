@@ -155,6 +155,10 @@ export interface ElectionRecord {
   certificate?: PublicProof;
 }
 export type ObjectLoader = (ref: Ref) => Uint8Array;
+export {
+  certificate as verifyArchiveCertificate,
+  nativeTransaction as verifyNativeTransaction,
+};
 function eq(a: unknown, b: unknown) {
   if (canonical(a) !== canonical(b)) throw Error("archive linkage mismatch");
 }

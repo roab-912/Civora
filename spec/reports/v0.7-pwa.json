@@ -1,0 +1,200 @@
+{
+  "milestone": "v0.7",
+  "date": "2026-11-06",
+  "status": "implemented_development",
+  "public_pilot_qualified": false,
+  "physical_devices_qualified": false,
+  "decision": "spec/decisions/0013-pwa-v0.7.md",
+  "launch": {
+    "workshop": "npm run dev",
+    "url": "http://127.0.0.1:8790",
+    "nodes": "npm run pwa:host -- --config pwa-networks.example.json",
+    "workshop_keys": "PUBLIC_TEST_ONLY",
+    "workshop_consensus": "synthetic linked signed commits; real Go transitions and real cryptographic proofs"
+  },
+  "toolchain": {
+    "go": "go1.27.3 windows/amd64",
+    "node": "24.12.0",
+    "npm": "11.10.0",
+    "playwright": "1.64.1",
+    "cometbft": "v0.38.26"
+  },
+  "verification": {
+    "typescript": {
+      "passed": true,
+      "tests": 129,
+      "command": "npm test",
+      "local_log": ".tools/v0.7-typescript-final.log"
+    },
+    "schemas_and_formatting": "passed",
+    "go_tests": "./... and -tags civora_sim ./... passed",
+    "go_vet": "normal and civora_sim passed",
+    "citizen_targeted_tests": "type-filter cursor binding and authenticated receipt status witnesses passed after the final Go edits",
+    "historical_fixture_checks": "v0.1 through v0.6 passed",
+    "browser_encryption_fixtures": "node scripts/generate-pwa-fixtures.mjs --check passed",
+    "historical_replay_and_resume": "accounts, activation, governance, eligibility index and both encrypted elections passed",
+    "encrypted_public_archive_audits": "independent Go and TypeScript passed for mixed and all-no elections",
+    "abrupt_exit_and_restart": "Go durability tests and native main, partition and anonymous observer restart passed",
+    "dependency_isolation": "no civora/internal/simulation in civnode or civnet",
+    "build": {
+      "passed": true,
+      "reproduced_byte_for_byte": true,
+      "local_evidence": ".tools/v0.7-build-reproducible.json",
+      "assets": {
+        "app.css": {
+          "sha256": "8f51e0b2ae1ca2fcf1539e6648b3f1f29930cee1b65b315a065fed3c46f4b3b6",
+          "size": "10564"
+        },
+        "app.js": {
+          "sha256": "3749fa54c99a1a3e4d4cea470738e46e632c72ce33942185bccbdfbb5f423620",
+          "size": "2156665"
+        },
+        "icon-192.png": {
+          "sha256": "2f0df6fe9670e3492de438f04d374bc02d74a612c736e6aab9f8855e05cd203a",
+          "size": "7745"
+        },
+        "icon-512.png": {
+          "sha256": "423f0b3fc8310342d35e149ec37c7df783134dcebf66de72f7b0fd66d9f2cb7d",
+          "size": "21708"
+        },
+        "icon.svg": {
+          "sha256": "fb8bd0b61615752e9bfc4153e08c3e53bf8dc017c81b5c5828fe13fb62afaaca",
+          "size": "403"
+        },
+        "index.html": {
+          "sha256": "35463e356dee0d006349c0e75bcfa848497a08ea55eb21eae82d887095db48fa",
+          "size": "1835"
+        },
+        "manifest.webmanifest": {
+          "sha256": "4526f89f5679d267290d9baa0f98899800c3d526a07c5a6c981e505473e68ae3",
+          "size": "610"
+        },
+        "sw.js": {
+          "sha256": "f4b8c8fdef18c46a623e9365bbe634225957e9c90f054bf727edc9b73a3f1534",
+          "size": "1595"
+        },
+        "worker.js": {
+          "sha256": "1472e7a3dd62deb913bdbfb1f7ea5525f634a9b5ef6c685ff9368ade0dee257d",
+          "size": "2458765"
+        }
+      }
+    },
+    "runner": "scripts/check.ps1 integrates all stages; core/native stages passed in the global run, final PWA and final replay stages completed separately",
+    "local_logs": [
+      ".tools/v0.7-check.log",
+      ".tools/v0.7-pwa-acceptance.log",
+      ".tools/v0.7-replay.log"
+    ]
+  },
+  "acceptance": {
+    "pwa": {
+      "passed": true,
+      "command": "npm run test:pwa",
+      "exit_code": 0,
+      "checks": [
+        "keyboard-focus-visible-and-labeled-desktop-mobile-forms",
+        "desktop-create-backup-register-native-inclusion",
+        "nonextractable-device-key-and-no-clear-secrets-in-indexeddb",
+        "encrypted-backup-import-on-independent-mobile-browser",
+        "propose-law-encrypt-Semaphore-vote-verify-total-apply",
+        "repeal-and-restore-through-new-votes-and-preserved-history",
+        "create-role-grant-and-revoke-through-three-real-votes",
+        "six-anonymous-ballot-posts-without-account-id-or-clear-choice",
+        "downloaded-receipt-import-compared-to-native-proof-without-submission",
+        "production-worker-refuses-foreign-network-and-poll-before-key-or-proof-use",
+        "unknown-frontend-version-blocks-startup",
+        "node-frontend-proxy-manifest-csp-installable-icons-without-development-controls",
+        "offline-shell-public-cache-explicit-label-and-no-background-post",
+        "foreign-network-backup-refused-and-vaults-isolated",
+        "mobile-full-selective-partitioned-record-independent-replay-and-certification",
+        "partition-worker-refuses-corrupt-pinned-artifact",
+        "partition-worker-encrypts-depth26-and-binds-nonce-proof-to-real-Semaphore-nullifier",
+        "recovery-signed-rotation-preserves-id-rejects-old-backup-and-retires-with-new-key"
+      ],
+      "browsers": [
+        "Chromium desktop 1440x1000",
+        "WebKit iPhone 13 emulation 390x664"
+      ],
+      "physical_devices": false,
+      "local_evidence": ".tools/qualification/pwa-1793961490640/report.json",
+      "screenshots": [
+        ".tools/qualification/pwa-1793961490640/desktop-home.png",
+        ".tools/qualification/pwa-1793961490640/mobile-recovered-account.png",
+        ".tools/qualification/pwa-1793961490640/receipt-002bc52d.png",
+        ".tools/qualification/pwa-1793961490640/receipt-63ffe616.png",
+        ".tools/qualification/pwa-1793961490640/receipt-7bc27b51.png",
+        ".tools/qualification/pwa-1793961490640/desktop-restored-law.png",
+        ".tools/qualification/pwa-1793961490640/receipt-155c1220.png",
+        ".tools/qualification/pwa-1793961490640/receipt-ee5ec3d6.png",
+        ".tools/qualification/pwa-1793961490640/receipt-27f8fcde.png",
+        ".tools/qualification/pwa-1793961490640/mobile-laws.png",
+        ".tools/qualification/pwa-1793961490640/mobile-offline-cache.png",
+        ".tools/qualification/pwa-1793961490640/mobile-certified-partitioned-result.png"
+      ]
+    },
+    "partition_generation": {
+      "identity": "PUBLIC_TEST_ONLY from v0.4 actors",
+      "opening": "historical authenticated frozen context",
+      "circuit_depth": "26",
+      "uses_only_membership_path": true,
+      "real_fresh_ciphertext": true,
+      "nonce_knowledge_and_nullifier_binding_verified": true,
+      "corrupt_artifact_refused": true,
+      "submitted_to_historical_archive": false
+    },
+    "native_consensus": {
+      "passed": true,
+      "checks": [
+        "seven-process-finality",
+        "signed-account-and-invalid-transaction",
+        "same-block-and-apphash-on-seven-replicas",
+        "native-commit-signatures-verified",
+        "two-offline-finality",
+        "four-nodes-cannot-finalize",
+        "abrupt-restart-with-persistent-sign-state",
+        "seven-replicas-recover",
+        "native-partition-opening-deadline-and-Go-TypeScript-apphash-proof",
+        "native-partition-abrupt-restart",
+        "native-validator-rotation-at-H-plus-2",
+        "native-new-key-signs-without-resetting-old-key-state",
+        "native-mixed-versions-old-signers-stop-before-activation",
+        "native-upgraded-nodes-resume-from-durable-state"
+      ],
+      "local_evidence": ".tools/acceptance/network-acca645e-72bf-4315-addb-cbff0ec94bc0/report.json"
+    },
+    "citizen_host": {
+      "passed": true,
+      "checks": [
+        "fourteen-native-validator-processes",
+        "anonymous-main-and-lane-P2P-sync",
+        "historical-absence-verified-independently-in-TypeScript",
+        "genesis-replay",
+        "abrupt-observer-restart-and-index-rebuild",
+        "no-account-or-consensus-private-key"
+      ],
+      "local_evidence": ".tools/acceptance/citizen-89170383-74a5-4d80-aced-54a394cea2b9/report.json"
+    },
+    "public_node_frontend": "pinned manifest proxy, CSP, installable PNG icons and absence of workshop controls verified",
+    "browser_console": "Playwright screenshot preparation attempts inline stylesheet injection; strict CSP refuses it. Policy is unchanged and all workflow checks and captures pass."
+  },
+  "fixtures": {
+    "spec/fixtures/v0.7/browser-crypto.json": {
+      "sha256": "33c4d491683e2b0b58b6ca187adbb3590f72f6818039d66c02e42d59408ae102",
+      "size": "39975"
+    },
+    "spec/fixtures/v0.7/browser-encryption.TEST_ONLY.json": {
+      "sha256": "33ba08ae0aab7860f5084b87e7975b71668a665e7cc83f77b8aa050feaf994e5",
+      "size": "261"
+    }
+  },
+  "limitations": [
+    "Development keys and synthetic workshop commits are explicitly TEST_ONLY; public pilot remains unqualified.",
+    "Mobile acceptance uses WebKit iPhone emulation, not physical phones or assistive-technology certification.",
+    "Private BigInt calculations are exponent-blinded but not externally audited or qualified constant-time; JavaScript secret erasure is not guaranteed.",
+    "The configured genesis is the initial trust anchor and must be authenticated independently.",
+    "Inline result verification checks the authenticated aggregate and decryption proof; partitioned result verification replays the full selective record.",
+    "The commitment-based path query reveals the requested public commitment to its provider.",
+    "Windows abrupt-process tests do not qualify power loss; the v0.6 native graceful-stop limitation remains documented.",
+    "Notifications, signed deployment, emergency tooling and ten-million scale qualification remain outside v0.7."
+  ]
+}

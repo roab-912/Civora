@@ -7,6 +7,7 @@ import (
 	"civora/internal/electionguard"
 	"civora/internal/partition"
 	"civora/internal/replica"
+	"civora/internal/state"
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/hex"
@@ -271,6 +272,16 @@ func (h *Host) receipt(lane, id string) (map[string]any, error) {
 					if e == nil && anchor.Path.Exists {
 						result["accepted_checkpoint"] = anchor.Path.Entry.Value
 						result["anchor"] = anchor
+						var accepted partition.Verified
+						if json.Unmarshal(codec.Must(anchor.Path.Entry.Value), &accepted) == nil && accepted.Summary.StatusRoot == m.Summary(poll).StatusRoot {
+							entries := []state.Entry{}
+							for j, deposit := range p.Deposits[:mustUint(p.Processed)] {
+								entries = append(entries, state.Entry{Table: "status", Key: fmt.Sprint(j), Value: map[string]any{"digest": deposit.Digest, "status": deposit.Status}})
+							}
+							if witness, e := state.WitnessFor(entries, "status", fmt.Sprint(i)); e == nil {
+								result["status_witness"] = witness
+							}
+						}
 					}
 				}
 			}

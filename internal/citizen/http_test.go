@@ -46,3 +46,34 @@ func TestPaginationKeepsSnapshotAndExpiresOldCursor(t *testing.T) {
 		t.Fatal("cross-filter cursor", res.Code)
 	}
 }
+
+func TestProposalTypeFilterIsBoundToCursor(t *testing.T) {
+	entries := []state.Entry{}
+	for i, kind := range []string{"law.create", "role.create", "law.repeal"} {
+		entries = append(entries, state.Entry{Table: "proposals", Key: strings.Repeat([]string{"a", "b", "c"}[i], 64), Value: map[string]any{"state": "open", "submitted_height": "1", "action": kind}})
+	}
+	v := &View{Height: "2", Entries: entries}
+	r := &Reader{views: map[uint64]*View{2: v}}
+	api := API{}
+	res := httptest.NewRecorder()
+	api.list(res, httptest.NewRequest("GET", "/v1/proposals?type=law&status=open&limit=1", nil), r, v, "proposals")
+	var page struct {
+		Items []map[string]any `json:"items"`
+		Next  string           `json:"next_cursor"`
+	}
+	if json.Unmarshal(res.Body.Bytes(), &page) != nil || len(page.Items) != 1 || page.Items[0]["action"] != "law.create" || page.Next == "" {
+		t.Fatal(res.Body.String())
+	}
+	for _, kind := range []string{"role", ""} {
+		res = httptest.NewRecorder()
+		api.list(res, httptest.NewRequest("GET", "/v1/proposals?status=open&type="+kind+"&cursor="+page.Next, nil), r, v, "proposals")
+		if res.Code != 400 {
+			t.Fatal("cross-type cursor accepted", res.Body.String())
+		}
+	}
+	res = httptest.NewRecorder()
+	api.list(res, httptest.NewRequest("GET", "/v1/proposals?status=open&type=law&cursor="+page.Next, nil), r, v, "proposals")
+	if json.Unmarshal(res.Body.Bytes(), &page) != nil || len(page.Items) != 1 || page.Items[0]["action"] != "law.repeal" {
+		t.Fatal(res.Body.String())
+	}
+}

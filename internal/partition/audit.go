@@ -71,7 +71,7 @@ func Dossier(f Frozen, result Provisional, checkpoints map[string]*Verified) (st
 	items := []any{}
 	for lane := range f.Lanes {
 		v := checkpoints[fmt.Sprint(lane)]
-		if v == nil || !v.Summary.ProcessingSealed {
+		if v == nil || !v.Summary.ProcessingSealed || v.Summary.Interrupted {
 			return "", fmt.Errorf("missing dossier lane")
 		}
 		items = append(items, v)

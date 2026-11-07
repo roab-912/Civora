@@ -6,6 +6,7 @@ import (
 	"civora/internal/core"
 	"civora/internal/electionguard"
 	"civora/internal/governance"
+	"civora/internal/recovery"
 	"civora/internal/replica"
 	"civora/internal/state"
 	"encoding/json"
@@ -186,6 +187,9 @@ func (m *Main) clone() *Main {
 	return n
 }
 func (m *Main) Check(raw []byte) error {
+	if recovery.IsCommand(raw) {
+		return m.Engine.CheckSecurity(raw)
+	}
 	var shape struct {
 		Type string `json:"type"`
 	}
@@ -236,6 +240,14 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 		}
 		if e = json.Unmarshal(raw, &shape); e != nil {
 			return nil, e
+		}
+		if recovery.IsCommand(raw) {
+			order, err := recovery.DecodeCommand(raw)
+			if err != nil {
+				return nil, err
+			}
+			ledger.SecurityOrders = append(ledger.SecurityOrders, order)
+			continue
 		}
 		if shape.Type == "lane.checkpoint" || shape.Type == "partition.tally" || shape.Type == "audit.attest" || shape.Type == "audit.challenge" {
 			var c Command
@@ -291,6 +303,11 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 	}
 	n.events = append(challengeEvents, consensus.CivicEvents(events)...)
 	for id, r := range n.Results {
+		if n.Engine.Governance.Polls[id].State == "interrupted" {
+			r.State = "interrupted"
+			n.Results[id] = r
+			continue
+		}
 		if n.Engine.Governance.Polls[id].State == "failed_certification" {
 			r.State = "failed_certification"
 			n.Results[id] = r
@@ -317,6 +334,7 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 		f := Frozen{Context: electionguard.ScaleContext{NetworkID: n.Engine.Config.NetworkID, PollID: id, Epoch: poll.ProtocolEpoch, Root: *poll.GroupRoot, Depth: n.Config.Depth, Partitions: fmt.Sprint(len(n.Config.Lanes))}, ProposalID: poll.ProposalID, GuardianIDs: guardians, Ceremony: *poll.CeremonyBundle, Opens: *poll.OpensAtMS, Closes: *poll.ClosesAtMS, SourceHeight: b.Height, Lanes: n.Config.Lanes, ArchiveKeys: n.Config.ArchiveKeys, EligibleCount: poll.EligibleCount}
 		f.Context.Checkpoint = f.ID()
 		f.Audit = n.Config.Audit
+		f.Recovery = n.Engine.Config.Recovery
 		f.Context.Checkpoint = f.ID()
 		if e = f.Validate(n.Engine.Config.ChainID); e != nil {
 			return nil, e
@@ -339,6 +357,13 @@ func (m *Main) Apply(b replica.Block) (replica.Machine, error) {
 	return n, nil
 }
 func (m *Main) command(c Command) error {
+	var target struct {
+		PollID string `json:"poll_id"`
+	}
+	_ = json.Unmarshal(c.Value, &target)
+	if p := m.Engine.Governance.Polls[target.PollID]; p != nil && p.State == "interrupted" && c.Type != "audit.challenge" {
+		return fmt.Errorf("ERR_SECURITY_INTERRUPTED")
+	}
 	switch c.Type {
 	case "audit.challenge":
 		var proof Challenge
@@ -435,3 +460,4 @@ func (m *Main) command(c Command) error {
 	}
 	return fmt.Errorf("coordinator command")
 }
+func (m *Main) TransactionPriority(raw []byte) int { return recovery.Priority(raw) }

@@ -1,6 +1,15 @@
-# Civora — PWA et notifications de développement v0.8
+# Civora — outillage de qualification v0.9, PWA v0.8
 
 Implémentation de développement des jalons v0.1 à v0.8 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
+
+V0.9 ajoute le contrôle de reçus natifs sous charge, les prérequis de reprise hors consensus en **ML-DSA-65/SHA3-384**, la persistance des compteurs et rotations, les suspensions prioritaires dans une genèse de laboratoire, le fuzzing et un rapport de campagne bloquant. **Le jalon de qualification reste incomplet** : campagne réelle de dix millions de bulletins sur 32 partitions, audits externes, appareils physiques et cycle complet de reprise restent nécessaires. L’atelier et sa PWA restent en développement v0.8 ; leur genèse n’est pas modifiée.
+
+```sh
+npm run test:qualification
+npm run qualify -- --output .tools/qualification-pending.json
+```
+
+La deuxième commande retourne **2** avec le dossier d’exemple : les preuves requises sont absentes, le pilote reste non qualifié. Le [guide v0.9](spec/qualification/README.md) décrit les mesures, la confiance et les exercices, la [décision 0015](spec/decisions/0015-qualification-v0.9.md) fixe les formats et les limites, et le [rapport v0.9](spec/reports/v0.9-qualification.json) distingue les contrôles locaux et les critères non satisfaits.
 
 Pour ouvrir la PWA sur **http://127.0.0.1:8790** :
 

@@ -19,8 +19,14 @@
   },
   "pwa_v0_7": {
     "application_version": "0.7.0",
-    "profiles": ["inline_dev", "transport_dev_v0_6"],
-    "protocol_epochs": ["1", "2"],
+    "profiles": [
+      "inline_dev",
+      "transport_dev_v0_6"
+    ],
+    "protocol_epochs": [
+      "1",
+      "2"
+    ],
     "state_schema": "1",
     "browser_buffer": "6.0.3",
     "browser_hashes": "1.3.2",
@@ -113,5 +119,20 @@
       "spec/fixtures/v0.4/actors.TEST_ONLY.json",
       "spec/fixtures/v0.4/oracle.TEST_ONLY.json"
     ]
+  },
+  "qualification_v0_9": {
+    "status": "local_prerequisites_only",
+    "public_pilot_qualified": false,
+    "receipts": "cmd/civqual",
+    "recovery": "cmd/civrecovery",
+    "recovery_signature": "ML-DSA-65 CIRCL v1.6.3",
+    "recovery_hash": "SHA3-384",
+    "recovery_keys": "spec/fixtures/v0.9/keys.TEST_ONLY.json",
+    "root_installed_in_existing_genesis": false,
+    "consensus_hold_integration": "development_opt_in_TEST_ONLY",
+    "full_mass_ballot_campaign": false,
+    "external_audits": false,
+    "decision": "spec/decisions/0015-qualification-v0.9.md",
+    "local_safety_decision": "spec/decisions/0016-suspensions-locales-v0.9.md"
   }
 }

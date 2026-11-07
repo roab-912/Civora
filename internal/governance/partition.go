@@ -69,7 +69,7 @@ func (s *State) BlockPartitionEffect(pollID string) {
 		return
 	}
 	p := s.Proposals[poll.ProposalID]
-	if p.State != "applied" {
+	if p.State != "applied" && p.State != "interrupted" {
 		p.State = "contested"
 		poll.State = "contested"
 	}

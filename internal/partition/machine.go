@@ -4,6 +4,7 @@ import (
 	"civora/internal/codec"
 	"civora/internal/consensus"
 	"civora/internal/electionguard"
+	"civora/internal/recovery"
 	"civora/internal/replica"
 	"civora/internal/semaphore"
 	"civora/internal/state"
@@ -17,11 +18,12 @@ const AdmissionBudget = 32
 const VerificationBudget = 4
 
 type Config struct {
-	NetworkID string          `json:"network_id"`
-	ChainID   string          `json:"chain_id"`
-	Lane      string          `json:"lane_id"`
-	Epoch     string          `json:"protocol_epoch"`
-	Source    consensus.Trust `json:"source"`
+	NetworkID string           `json:"network_id"`
+	ChainID   string           `json:"chain_id"`
+	Lane      string           `json:"lane_id"`
+	Epoch     string           `json:"protocol_epoch"`
+	Source    consensus.Trust  `json:"source"`
+	Recovery  *recovery.Config `json:"recovery,omitempty"`
 }
 type Deposit struct {
 	Envelope  string `json:"envelope"`
@@ -45,12 +47,14 @@ type Poll struct {
 	Spent       map[string]string `json:"spent"`
 	Ballots     map[string]string `json:"ballots"`
 	Ciphertexts map[string]string `json:"ciphertexts"`
+	Interrupted bool              `json:"interrupted,omitempty"`
 }
 type Machine struct {
-	Config    Config           `json:"config"`
-	H         string           `json:"height"`
-	T         string           `json:"time_ms"`
-	Polls     map[string]*Poll `json:"polls"`
+	Config    Config                `json:"config"`
+	H         string                `json:"height"`
+	T         string                `json:"time_ms"`
+	Polls     map[string]*Poll      `json:"polls"`
+	Security  *recovery.LedgerState `json:"security,omitempty"`
 	supported uint64
 	events    []abci.Event
 }
@@ -80,7 +84,17 @@ func New(raw []byte, supported uint64) (*Machine, error) {
 	if _, e = c.Source.Set(); e != nil {
 		return nil, e
 	}
-	return &Machine{Config: c, H: "0", T: "0", Polls: map[string]*Poll{}, supported: supported}, nil
+	m := &Machine{Config: c, H: "0", T: "0", Polls: map[string]*Poll{}, supported: supported}
+	if c.Recovery != nil {
+		if c.Recovery.Profile != "transport_dev_v0_5" && c.Recovery.Profile != "transport_dev_v0_6" {
+			return nil, fmt.Errorf("ERR_RECOVERY_PROFILE")
+		}
+		if e := c.Recovery.ValidateGenesis(c.NetworkID, c.Recovery.Profile); e != nil {
+			return nil, e
+		}
+		m.Security = recovery.NewLedger()
+	}
+	return m, nil
 }
 func (m *Machine) Height() uint64 { n, _ := codec.Uint(m.H); return n }
 func (m *Machine) Time() uint64   { n, _ := codec.Uint(m.T); return n }
@@ -96,6 +110,7 @@ func (m *Machine) Active() bool {
 }
 func (m *Machine) Entries() []state.Entry {
 	es := []state.Entry{{Table: "replica_meta", Key: "partition", Value: map[string]any{"config": m.Config, "height": m.H, "time_ms": m.T}}}
+	es = append(es, m.Security.Entries()...)
 	ids := []string{}
 	for id := range m.Polls {
 		ids = append(ids, id)
@@ -142,7 +157,7 @@ func (m *Machine) Summary(id string) Summary {
 		spent = append(spent, state.Entry{Table: "spent", Key: n, Value: d})
 	}
 	sealed := m.Time() >= closed
-	return Summary{m.Config.NetworkID, id, m.Config.Lane, p.Frozen.Context.Epoch, p.Frozen.Context.Checkpoint, m.H, m.T, fmt.Sprint(len(p.Deposits)), LogRoot(admissionItems(p)), p.Processed, state.Root(statuses), p.Counted, state.Root(spent), p.Aggregate, fmt.Sprint(len(p.Batches)), LogRoot(batchItems(p)), sealed, sealed && processed == uint64(len(p.Deposits))}
+	return Summary{m.Config.NetworkID, id, m.Config.Lane, p.Frozen.Context.Epoch, p.Frozen.Context.Checkpoint, m.H, m.T, fmt.Sprint(len(p.Deposits)), LogRoot(admissionItems(p)), p.Processed, state.Root(statuses), p.Counted, state.Root(spent), p.Aggregate, fmt.Sprint(len(p.Batches)), LogRoot(batchItems(p)), sealed, sealed && processed == uint64(len(p.Deposits)) && !p.Interrupted, p.Interrupted}
 }
 func (m *Machine) clone() *Machine {
 	var n Machine
@@ -151,6 +166,13 @@ func (m *Machine) clone() *Machine {
 	return &n
 }
 func (m *Machine) Check(raw []byte) error {
+	if recovery.IsCommand(raw) {
+		b, e := recovery.DecodeCommand(raw)
+		if e != nil {
+			return e
+		}
+		return m.clone().acceptHolds([]recovery.Bundle{b})
+	}
 	if len(raw) > 256*1024 {
 		return fmt.Errorf("transaction bound")
 	}
@@ -174,6 +196,31 @@ func (m *Machine) Apply(b replica.Block) (replica.Machine, error) {
 	n := m.clone()
 	n.H = b.Height
 	n.T = b.TimeMS
+	orders := []recovery.Bundle{}
+	preflightSize := 0
+	for _, encoded := range b.Transactions {
+		if len(encoded) > 349526 {
+			return nil, fmt.Errorf("transaction bound")
+		}
+		raw, err := codec.Blob(encoded)
+		if err != nil {
+			return nil, err
+		}
+		preflightSize += len(raw)
+		if len(raw) > 256*1024 || preflightSize > replica.MaxBlockBytes {
+			return nil, fmt.Errorf("block bound")
+		}
+		if recovery.IsCommand(raw) {
+			o, err := recovery.DecodeCommand(raw)
+			if err != nil {
+				return nil, err
+			}
+			orders = append(orders, o)
+		}
+	}
+	if err := n.acceptHolds(orders); err != nil {
+		return nil, err
+	}
 	admitted, processed, size := 0, 0, 0
 	for _, encoded := range b.Transactions {
 		raw, e := codec.Blob(encoded)
@@ -183,6 +230,9 @@ func (m *Machine) Apply(b replica.Block) (replica.Machine, error) {
 		size += len(raw)
 		if size > replica.MaxBlockBytes {
 			return nil, fmt.Errorf("block bound")
+		}
+		if recovery.IsCommand(raw) {
+			continue
 		}
 		var c Command
 		if e = codec.Decode(raw, "partition_tx", &c); e != nil {
@@ -254,6 +304,12 @@ func (m *Machine) open(proof consensus.StateProof) error {
 	if e := f.Validate(m.Config.Source.ChainID); e != nil {
 		return e
 	}
+	if string(codec.Must(f.Recovery)) != string(codec.Must(m.Config.Recovery)) {
+		return fmt.Errorf("ERR_RECOVERY_OPENING_CONTEXT")
+	}
+	if m.pollHeld(f) {
+		return fmt.Errorf("ERR_SECURITY_HOLD")
+	}
 	p, _ := codec.Uint(f.Context.Partitions)
 	lane, _ := codec.Uint(m.Config.Lane)
 	epoch, _ := codec.Uint(f.Context.Epoch)
@@ -267,7 +323,7 @@ func (m *Machine) open(proof consensus.StateProof) error {
 	if e != nil {
 		return e
 	}
-	m.Polls[f.Context.PollID] = &Poll{f, []Deposit{}, []StoredBatch{}, "0", "0", v.Zero(), map[string]string{}, map[string]string{}, map[string]string{}}
+	m.Polls[f.Context.PollID] = &Poll{Frozen: f, Deposits: []Deposit{}, Batches: []StoredBatch{}, Processed: "0", Counted: "0", Aggregate: v.Zero(), Spent: map[string]string{}, Ballots: map[string]string{}, Ciphertexts: map[string]string{}}
 	return nil
 }
 
@@ -311,6 +367,9 @@ func (m *Machine) admit(b Batch) (int, error) {
 	}
 	if allExisting {
 		return 0, nil
+	}
+	if p.Interrupted {
+		return 0, fmt.Errorf("ERR_SECURITY_INTERRUPTED")
 	}
 	if m.Time() < opens || m.Time() >= closes {
 		return 0, fmt.Errorf("admission closed")
@@ -372,6 +431,9 @@ func (m *Machine) process(req Process) (int, error) {
 	p := m.Polls[req.PollID]
 	if p == nil {
 		return 0, fmt.Errorf("unknown poll")
+	}
+	if p.Interrupted {
+		return 0, fmt.Errorf("ERR_SECURITY_INTERRUPTED")
 	}
 	count, _ := codec.Uint(req.Count)
 	start, _ := codec.Uint(p.Processed)

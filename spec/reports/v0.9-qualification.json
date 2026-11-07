@@ -1,0 +1,735 @@
+{
+  "milestone": "v0.9",
+  "date": "2026-11-07",
+  "status": "local_safety_preparation_tested_public_qualification_pending",
+  "milestone_complete": false,
+  "public_qualified": false,
+  "qualified_to_ten_million_ballots": false,
+  "base_commit": "54b7bdc441d2cb9d800d88af0f3d2e11b7274f46",
+  "worktree_changes_included": true,
+  "decision": "spec/decisions/0015-qualification-v0.9.md",
+  "guide": "spec/qualification/README.md",
+  "implemented": {
+    "receipt_collector": {
+      "command": "cmd/civqual",
+      "scope": "Authenticated native deposit receipts, not complete ballot validity or tally certification",
+      "independently_pinned_frozen_context": true,
+      "individual_receipt_proofs": true,
+      "duplicates_excluded_from_throughput": true,
+      "empty_seconds_included": true,
+      "failures_published_separately": true,
+      "canonical_jsonl": true,
+      "canonical_immutable_utf8_output": true,
+      "memory": "Deduplication set grows linearly with unique envelope digests; at most 20 million samples per input"
+    },
+    "off_chain_recovery": {
+      "command": "cmd/civrecovery",
+      "signature": "Pure ML-DSA-65, empty context, on the prescribed 48-byte SHA3-384 digest",
+      "implementations": [
+        "Go/CIRCL 1.6.3",
+        "Node 24.12.0 / OpenSSL 3.5.4 independent verification"
+      ],
+      "quorums": "5/7 technical AND 5/7 civic; all identities and keys distinct",
+      "freshness": "3/5 separate mirror signatures, at most 10 minutes",
+      "persistent_state": "bbolt transaction, pinned root, monotone counters per recovery epoch and nondecreasing observed clock",
+      "rotation": "Both old and new college quorums plus a mandatory constitutional approval verifier; TEST_ONLY adapter in exercises",
+      "authority": "Off-chain read-only state and signed references only. No block, result, import or reserve activation is authorized by this tool.",
+      "existing_genesis_modified": false
+    },
+    "qualification_gate": {
+      "command": "npm run qualify",
+      "strict_schemas": true,
+      "canonical_campaign_policy_and_receipt_reports": true,
+      "artifact_hashes_sizes_and_directory_confinement": true,
+      "streamed_large_artifact_hashing": true,
+      "thresholds": "10M unique receipts, 32 partitions, 5000/s for 900s, p95 <=10s/p99 <=30s, one hot partition 320/s for >=60s, 20M full checks at >=500/s, backlog and certification <=24h, physical mobile generation p95 <=8s",
+      "external_crypto_and_application_audits_required": true,
+      "critical_and_high_findings_must_be_fixed": true,
+      "independently_pinned_reviewer_policy": "3/5 organizations sign the canonical campaign and artifact references",
+      "current_default_exit_code": 2,
+      "scope": "Authenticates evidence and reviewer declarations and applies thresholds; independent auditors must validate measurement truth and operator independence"
+    },
+    "onchain_safety": {
+      "scope": "Explicit opt-in development_TEST_ONLY genesis/configuration; no existing session is assigned a recovery root",
+      "authority": "security.hold only; no reserve activation, vote, effect, state import or restoration of revoked modules",
+      "ordering": "At most four authenticated holds, before affected deadline transitions, admission and effects; proposal selection prioritizes holds",
+      "clock": "Authenticated block time; mirror observations are required only off chain",
+      "persistent_state": "Counter metadata plus individual signed order entries; deterministic journal replay",
+      "polls": "Interrupted decisions retain results, planned dates, ciphertexts, deposits and receipts; elapsed time never resumes them",
+      "partitions": "Interrupted checkpoint cannot certify; processing stops while exact historical deposit retry and receipt verification remain available",
+      "clients": "Current PWA refuses writes under a recovery configuration it cannot independently operate",
+      "root_and_module_policy": "Test root is genesis-bound; held modules remain under safety review for new operations until safe authorization of approved replacements"
+    }
+  },
+  "verification": {
+    "full_regression_gate": {
+      "passed": true,
+      "exit_code": 0,
+      "command": "./scripts/check.ps1",
+      "local_log": ".tools/v0.9-local-check.log",
+      "typescript_tests_at_gate": 159,
+      "go_tests": "normal and civora_sim passed",
+      "go_vet": "normal and civora_sim passed",
+      "historical_fixtures_and_crypto_locks": "passed",
+      "historical_replay_resume_and_independent_encrypted_audits": "passed",
+      "dependency_isolation": "No recoverytest signing helpers in civnode or civnet"
+    },
+    "final_typescript": {
+      "passed": true,
+      "tests": 159,
+      "failures": 0,
+      "local_log": ".tools/v0.9-local-check.log"
+    },
+    "final_receipt_tests_and_cli_build": {
+      "passed": true,
+      "local_log": ".tools/v0.9-measurements-final.log"
+    },
+    "final_formatting": {
+      "passed": true,
+      "local_log": ".tools/v0.9-local-format.log"
+    },
+    "timed_fuzzing": {
+      "passed": true,
+      "seconds_per_target": "20",
+      "public_security_audit": false,
+      "targets": [
+        {
+          "name": "fuzz-codec",
+          "passed": true,
+          "elapsed_ms": "27957",
+          "exit_code": "0",
+          "log": "fuzz-codec.log",
+          "executions": "29148",
+          "local_log": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/fuzz-codec.log"
+        },
+        {
+          "name": "fuzz-electionguard",
+          "passed": true,
+          "elapsed_ms": "25655",
+          "exit_code": "0",
+          "log": "fuzz-electionguard.log",
+          "executions": "165405",
+          "local_log": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/fuzz-electionguard.log"
+        },
+        {
+          "name": "fuzz-partition",
+          "passed": true,
+          "elapsed_ms": "33431",
+          "exit_code": "0",
+          "log": "fuzz-partition.log",
+          "executions": "541",
+          "local_log": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/fuzz-partition.log"
+        },
+        {
+          "name": "fuzz-recovery",
+          "passed": true,
+          "elapsed_ms": "27304",
+          "exit_code": "0",
+          "log": "fuzz-recovery.log",
+          "executions": "299",
+          "local_log": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/fuzz-recovery.log"
+        }
+      ],
+      "local_evidence": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/report.json"
+    },
+    "final_cli_and_durability_exercises": {
+      "passed": true,
+      "steps": [
+        {
+          "name": "go-recovery-and-receipts",
+          "passed": true,
+          "elapsed_ms": "8503",
+          "exit_code": "0",
+          "log": "go-recovery-and-receipts.log"
+        },
+        {
+          "name": "onchain-holds-priority-effects-partition-and-SIGKILL",
+          "passed": true,
+          "elapsed_ms": "12271",
+          "exit_code": "0",
+          "log": "onchain-holds-priority-effects-partition-and-SIGKILL.log"
+        },
+        {
+          "name": "native-seven-node-recovery-hold",
+          "passed": true,
+          "elapsed_ms": "33121",
+          "exit_code": "0",
+          "log": "native-seven-node-recovery-hold.log"
+        },
+        {
+          "name": "fuzz-codec",
+          "passed": true,
+          "elapsed_ms": "27957",
+          "exit_code": "0",
+          "log": "fuzz-codec.log"
+        },
+        {
+          "name": "fuzz-electionguard",
+          "passed": true,
+          "elapsed_ms": "25655",
+          "exit_code": "0",
+          "log": "fuzz-electionguard.log"
+        },
+        {
+          "name": "fuzz-partition",
+          "passed": true,
+          "elapsed_ms": "33431",
+          "exit_code": "0",
+          "log": "fuzz-partition.log"
+        },
+        {
+          "name": "fuzz-recovery",
+          "passed": true,
+          "elapsed_ms": "27304",
+          "exit_code": "0",
+          "log": "fuzz-recovery.log"
+        },
+        {
+          "name": "build-independent-verifier",
+          "passed": true,
+          "elapsed_ms": "3087",
+          "exit_code": "0",
+          "log": "build-independent-verifier.log"
+        },
+        {
+          "name": "offline-hold-no-consensus",
+          "passed": true,
+          "elapsed_ms": "1694",
+          "exit_code": "0",
+          "log": "offline-hold-no-consensus.log"
+        },
+        {
+          "name": "offline-replay-refused-after-process-restart",
+          "passed": true,
+          "elapsed_ms": "218",
+          "exit_code": "1",
+          "log": "offline-replay-refused-after-process-restart.log"
+        },
+        {
+          "name": "offline-counter-still-durable",
+          "passed": true,
+          "elapsed_ms": "156",
+          "exit_code": "0",
+          "log": "offline-counter-still-durable.log"
+        },
+        {
+          "name": "test-root-refused-without-explicit-opt-in",
+          "passed": true,
+          "elapsed_ms": "185",
+          "exit_code": "1",
+          "log": "test-root-refused-without-explicit-opt-in.log"
+        },
+        {
+          "name": "build-receipt-collector",
+          "passed": true,
+          "elapsed_ms": "4644",
+          "exit_code": "0",
+          "log": "build-receipt-collector.log"
+        },
+        {
+          "name": "collect-authenticated-receipts-with-duplicates-and-failures",
+          "passed": true,
+          "elapsed_ms": "5080",
+          "exit_code": "0",
+          "log": "collect-authenticated-receipts-with-duplicates-and-failures.log"
+        },
+        {
+          "name": "collector-refuses-unauthenticated-context",
+          "passed": true,
+          "elapsed_ms": "172",
+          "exit_code": "1",
+          "log": "collector-refuses-unauthenticated-context.log"
+        },
+        {
+          "name": "campaign-cannot-qualify-missing-measurements",
+          "passed": true,
+          "elapsed_ms": "692",
+          "exit_code": "2",
+          "log": "campaign-cannot-qualify-missing-measurements.log"
+        }
+      ],
+      "local_evidence": ".tools/qualification/v0.9-7cd2e5ee-da6b-4309-9c51-19d8f3478a49/report.json",
+      "local_log": ".tools/v0.9-local-prerequisites.log"
+    },
+    "fixture_receipt_measurements": {
+      "attempts": "4",
+      "average_envelope_bytes": "8231",
+      "duplicates": "1",
+      "failed_attempts": "2",
+      "format": "civic-receipt-measurements-1",
+      "histogram_cap_ms": "60000",
+      "maximum_envelope_bytes": "8231",
+      "minimum_receipts_per_second": "0",
+      "network_id": "b2852bcc18cdd1a481deb563eb7ca13e4d0cb202681edd1b7735b08747b1dd5f",
+      "partitions": "8",
+      "per_lane": [
+        "1",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "per_second": [
+        "0",
+        "1",
+        "0"
+      ],
+      "poll_id": "ffaaca9deef1c53cbde0bc1468d625950a0d7960943ca02f622124c7cbc72a4b",
+      "public_qualified": false,
+      "receipt_max_ms": "1000",
+      "receipt_p95_ms": "1000",
+      "receipt_p99_ms": "1000",
+      "verified_unique_receipts": "1",
+      "window_end_ms": "4000",
+      "window_start_ms": "1000",
+      "scope": "PUBLIC_TEST_ONLY: synthetic native commits; one unique envelope, one duplicate, one invalid proof and one transport failure. No mass-capacity inference."
+    },
+    "regressions": {
+      "native_consensus": {
+        "passed": true,
+        "checks_count": 14,
+        "local_evidence": ".tools/acceptance/network-45ae0926-2853-45ee-89fa-6a6314774821/report.json"
+      },
+      "citizen_observer": {
+        "passed": true,
+        "checks_count": 6,
+        "local_evidence": ".tools/acceptance/citizen-7e23255d-ccd2-4332-ac8f-b22859507639/report.json"
+      },
+      "pwa": {
+        "passed": true,
+        "checks_count": 18,
+        "local_evidence": ".tools/qualification/pwa-1794010644942/report.json"
+      },
+      "notifications": {
+        "passed": true,
+        "checks_count": 8,
+        "local_evidence": ".tools/qualification/notifications-1794010777970/report.json"
+      }
+    },
+    "onchain_safety_drills": {
+      "passed": true,
+      "local_log": ".tools/v0.9-safety-final-targeted.log",
+      "cases": [
+        "ABCI hold selection ahead of normal transactions",
+        "No speculative hold visible before Commit",
+        "SIGKILL before and after durable rename",
+        "Real ElectionGuard election effect blocked at its execution deadline",
+        "Partition admission and processing restrictions preserve original deposits",
+        "Go/OpenSSL account transition roots and events match",
+        "Go/TypeScript refusal of a quorum-signed interrupted checkpoint",
+        "PWA safe refusal of writes for unsupported recovery rules"
+      ]
+    },
+    "native_safety": {
+      "milestone": "v0.9",
+      "scope": "PUBLIC_TEST_ONLY_LOCAL_NATIVE_CONSENSUS",
+      "passed": true,
+      "public_qualified": false,
+      "checks": [
+        "seven-real-native-validators-finalize-explicit-test-recovery-genesis",
+        "ML-DSA-dual-quorum-hold-commits-on-native-consensus",
+        "new-account-signatures-and-order-replay-refused-after-hold",
+        "seven-replicas-agree-on-block-and-AppHash-after-hold",
+        "native-commit-signatures-verified-independently",
+        "SIGKILL-restart-preserves-hold-counter-and-signing-state"
+      ],
+      "limitations": [
+        "Seven local processes share one operator/host; WAN, physical key custody and independent operators are not qualified.",
+        "Root configuration and keys are explicit development fixtures; no existing workshop genesis is changed."
+      ],
+      "local_evidence": ".tools/qualification/recovery-native-75f9529c-c206-4889-a43d-6c229740d30b/report.json"
+    }
+  },
+  "outstanding": [
+    {
+      "id": "production-safety-profile-and-client",
+      "kind": "independent_qualification_and_authorized_configuration",
+      "status": "local_only_not_qualified",
+      "detail": "The tested hold path is explicit development genesis only. Real root installation, a browser capable of independently operating recovery rules, complete dissemination and operational confinement remain to qualify."
+    },
+    {
+      "id": "constitutional-root-and-reserve-lifecycle",
+      "kind": "implementation_and_authorized_configuration",
+      "status": "not_complete",
+      "detail": "Install a genuine independently authenticated root in a new authorized genesis/configuration, connect constitutional rotation proofs and preapproved reserve readiness/barriers. The existing workshop was not assigned emergency authorities."
+    },
+    {
+      "id": "distribution-compromise-and-recovery",
+      "kind": "implementation_and_exercise",
+      "status": "not_complete",
+      "detail": "TUF/release trust and compromised distribution exercise; authenticated new-network recovery dossier/import and explicit client choice."
+    },
+    {
+      "id": "real-ten-million-ballots-and-peak-receipts",
+      "kind": "infrastructure_and_measurement",
+      "status": "not_run",
+      "detail": "Independent 32-partition installation, genuine fresh eligibility and ciphertext proofs, 15-minute 5000/s durable peak, 320/s hot partition and second admissions."
+    },
+    {
+      "id": "twenty-million-full-checks-and-backlog",
+      "kind": "infrastructure_and_measurement",
+      "status": "not_run",
+      "detail": "500 complete checks/s, full backlog catch-up, independent full audits and certification within 24 hours."
+    },
+    {
+      "id": "wan-saturation-and-post-push-read-surge",
+      "kind": "infrastructure_and_exercise",
+      "status": "not_qualified",
+      "detail": "Real installation under declared WAN delay/loss/partitions, asymmetric saturation, archive failure and read surge. Local process restart tests do not qualify WAN."
+    },
+    {
+      "id": "physical-mobile",
+      "kind": "device_measurement",
+      "status": "not_qualified",
+      "detail": "Reference physical phones, proof-generation p95 and Push delivery/installation. Browser emulation remains a regression only."
+    },
+    {
+      "id": "external-audits-and-remediation",
+      "kind": "independent_review",
+      "status": "not_supplied",
+      "detail": "Independent cryptographic and application audits, exact audited source archive, reviewed findings and critical/high remediation. A local self-review is not an external audit."
+    },
+    {
+      "id": "operational-incident-exercise",
+      "kind": "operator_exercise",
+      "status": "not_qualified",
+      "detail": "Real independent college members, hardware/key separation, confidential channel, on-call process, actual confinement within two hours, and public remediation timeline."
+    }
+  ],
+  "external_findings_status": "not_assessed_by_independent_auditors",
+  "artifacts": {
+    "fixtures": {
+      "spec/fixtures/v0.9/frozen.TEST_ONLY.json": {
+        "sha256": "1d50515e3445ba107bcce6bd27661bf894f99eaeeec848177c14992333d5a6ea",
+        "size": "32632"
+      },
+      "spec/fixtures/v0.9/hold.TEST_ONLY.json": {
+        "sha256": "b08f910e29b76788ad46807883882b953dd0bee56367ea829f50d5afffe004a7",
+        "size": "59778"
+      },
+      "spec/fixtures/v0.9/interrupted-checkpoint.TEST_ONLY.json": {
+        "sha256": "ebbdffd0d4a0b0fcbe6e5b897c5f2aa77a8287928c40a375fe55693592a724b7",
+        "size": "107608"
+      },
+      "spec/fixtures/v0.9/keys.TEST_ONLY.json": {
+        "sha256": "390afc6f30c9b3411730ecfaf21c8947fb9c0a3e8e1df40ccdbef09ed7f6413b",
+        "size": "1718"
+      },
+      "spec/fixtures/v0.9/onchain-hold.TEST_ONLY.json": {
+        "sha256": "e0bc00d9e7edc10f37cfafdab385132f88a5c8c982096287ff36bd6d1b8b5335",
+        "size": "100202"
+      },
+      "spec/fixtures/v0.9/receipts.TEST_ONLY.jsonl": {
+        "sha256": "e14796334380a20b98d051a556bbd94569c0c9e9d7b98f68f63d18ddc13dbc11",
+        "size": "107670"
+      },
+      "spec/fixtures/v0.9/root.TEST_ONLY.json": {
+        "sha256": "389b08ec8a2949bffa26224c7a0c9bb83aff339d68d99a2e9e097f215d51b405",
+        "size": "50873"
+      }
+    },
+    "worktree_source_files": {
+      ".gitattributes": {
+        "sha256": "13ee63f43a8964082b59c5db4eaf55d4a847a3bfb4f9fdd88b4fd94a7429aea2",
+        "size": "148"
+      },
+      "README.md": {
+        "sha256": "da3e23f989fde79985323d7f031e72f34e172d528656c054159423d81f6706e3",
+        "size": "23685"
+      },
+      "cmd/civqual/main.go": {
+        "sha256": "d58890287ce9360ea0b55f4e7e5593c049bcac0333376895bfb59cb2cf650964",
+        "size": "2075"
+      },
+      "cmd/civrecovery/main.go": {
+        "sha256": "2e4f9f24b396287c18557907fa659f15fc80925e86ba7e77b3265688a3e43354",
+        "size": "3527"
+      },
+      "go.mod": {
+        "sha256": "7a835b126588f35772d2bfe04753f6056305313d7dd04a2ab5d2bc901457186a",
+        "size": "3723"
+      },
+      "internal/codec/fuzz_test.go": {
+        "sha256": "46008b784c66c75d94f7d780a2e271d0776f32341814162cc6c3e0365480165e",
+        "size": "526"
+      },
+      "internal/consensus/app.go": {
+        "sha256": "30fc740030344c2cc0450a7dfa261563b47a493619158c7ea501cdc290110c41",
+        "size": "8698"
+      },
+      "internal/consensus/ledger.go": {
+        "sha256": "23b73526feba81c351f06c29fc4c4022429e5fe33ead4fb7b5ef64122262d335",
+        "size": "2923"
+      },
+      "internal/consensus/rotation.go": {
+        "sha256": "116053471d088646510be84894a6c5cbb0f94a89c3f83d63db107cce491a9e91",
+        "size": "5140"
+      },
+      "internal/consensus/security_test.go": {
+        "sha256": "ea8da5c7a6691c45d6fd169736ea2fd4a9466201f6b8cc1069cd61ba57c93079",
+        "size": "4873"
+      },
+      "internal/core/core.go": {
+        "sha256": "58f9734cc61bedaf57993886b43b84153b61b759e9791b7cfd68c9b0924b2754",
+        "size": "17024"
+      },
+      "internal/core/governance.go": {
+        "sha256": "7df24a88af86792c1431c34145ba13667700bca54aa2381c587b6b7acd831885",
+        "size": "5353"
+      },
+      "internal/core/security.go": {
+        "sha256": "150fe4b8095c95216b08f0be70fb8243d11c28d3564c9ea0a177ddfd5a5b76ed",
+        "size": "3107"
+      },
+      "internal/core/security_test.go": {
+        "sha256": "d98c6c72ae4ea7a8849dac4b0ff1302aa000ccba7d4cb60fa5911327c04f6d1f",
+        "size": "4902"
+      },
+      "internal/electionguard/fuzz_test.go": {
+        "sha256": "c0da785ac3e0d1e1f62ba423f6033f818cffcd9f07afb37bb59620125e2eeb32",
+        "size": "404"
+      },
+      "internal/governance/partition.go": {
+        "sha256": "af72171c8763edc46a789cb58d7738b99f7146959d7aea5507bd9376fadaef10",
+        "size": "2260"
+      },
+      "internal/governance/security.go": {
+        "sha256": "ab61352978f1076f0793052fa1d562b22aad2c8243402cbd9d988c7dac5ba0d3",
+        "size": "628"
+      },
+      "internal/partition/audit.go": {
+        "sha256": "dbcacf2eb7dfae9a9a917ce165cff4ac080c7a7a3006cc4622d8b4441f260f2b",
+        "size": "5812"
+      },
+      "internal/partition/checkpoint.go": {
+        "sha256": "08937fc8472edbe7491b2f66ce9d1af72d2e23c6a904be5b3aa1c2902e00510b",
+        "size": "7967"
+      },
+      "internal/partition/fuzz_test.go": {
+        "sha256": "98ee6d7433822a66e3df6e45964103b5595da389d62aa715ae29ffd54c2ca9f7",
+        "size": "725"
+      },
+      "internal/partition/machine.go": {
+        "sha256": "3366b8d203af3a43dc50e63b59fccfa860863d24bf57fec2711411688144f29f",
+        "size": "15407"
+      },
+      "internal/partition/main.go": {
+        "sha256": "f0d2e8212dd77fac22e51f0466ba6c27b35717367a795689421c5dfbaa840dae",
+        "size": "14853"
+      },
+      "internal/partition/security.go": {
+        "sha256": "41c32a1b3035425506b3c77667a11d4b568818c1185e0857a57d6a7edca627b3",
+        "size": "1680"
+      },
+      "internal/partition/security_test.go": {
+        "sha256": "dd1cfd3437ce8dc228ecebf396d901634231c3651107bc925ff76a2c06df7584",
+        "size": "6299"
+      },
+      "internal/partition/types.go": {
+        "sha256": "d258cf7915af6d434f1cc33be2589c8479b183e31cf97215d07f67b710c0ba60",
+        "size": "7165"
+      },
+      "internal/qualification/receipts.go": {
+        "sha256": "0f8a66965e68ded516861f4c56575907e65b2592efd1e85a57f243c6134c0407",
+        "size": "5611"
+      },
+      "internal/qualification/receipts_test.go": {
+        "sha256": "d9d9018ed4724ac150672dcb763d5e7916e755b1c5d34c41e9eacc1a4c126521",
+        "size": "3627"
+      },
+      "internal/recovery/ledger.go": {
+        "sha256": "76c0fd0be5ac1a0491b00ee0ed1d6b9ef4d0a34c62a1a90214e23abac3034607",
+        "size": "3515"
+      },
+      "internal/recovery/recovery.go": {
+        "sha256": "69996f55cac212f08f644711e7bae3fb9fc3c4957e38918eae3a2e8a2e215a2b",
+        "size": "9669"
+      },
+      "internal/recovery/recovery_test.go": {
+        "sha256": "f67547e913dc7807fcd9cc73f479a22999af829a30264218e66d97504416fdf1",
+        "size": "9536"
+      },
+      "internal/recovery/store.go": {
+        "sha256": "c296ff79b0b21a4e1dffda696a324c56865d9a6513d9116af9b828db338b757c",
+        "size": "3931"
+      },
+      "internal/recoverytest/fixtures.go": {
+        "sha256": "c718a6c1c8de42ec2d4be164e41d12a55f636864f6267ea0a5f7ede02726ae49",
+        "size": "2584"
+      },
+      "package-lock.json": {
+        "sha256": "ce3b0d960452d8f8474771f1dad47a70a91671621dd7e9de98f1fd4ffa5d0c23",
+        "size": "95750"
+      },
+      "package.json": {
+        "sha256": "126c63b829bc57d49c0ee5ffae2d81a556bc59f94c4be8a85c08af5e6566950e",
+        "size": "4150"
+      },
+      "scripts/check.ps1": {
+        "sha256": "aca58d76e38ba40d17b5017750ff68bd2cf7eedad9f27e287dc8b2e42e1c4f90",
+        "size": "8196"
+      },
+      "scripts/generate-schemas.mjs": {
+        "sha256": "35b9cf4742937ddc263372f5df6781c74e3c9cd8bda8cafa040afb62eb5bf9d7",
+        "size": "9814"
+      },
+      "scripts/qualification-schemas.mjs": {
+        "sha256": "ffef98817063bca6cbb7f618f7a2aa29b6926f0c5f7b9de177bf3acc44253cad",
+        "size": "2999"
+      },
+      "scripts/recovery-schemas.mjs": {
+        "sha256": "264b16ba068c657fc840f7887152a9079cdfc467450ea52413b8155376c15f76",
+        "size": "3496"
+      },
+      "scripts/test-qualification.mjs": {
+        "sha256": "b97b9198b18573e76ff0af3bfb53cc8588837a716283a8c1688a288ee5ad90ff",
+        "size": "6679"
+      },
+      "scripts/test-recovery-native.mjs": {
+        "sha256": "9bec38b93f6e5f33ee9b7935321caa84ee18f535cfb4a0601f705bded2d24a84",
+        "size": "7818"
+      },
+      "services/qualification/campaign.ts": {
+        "sha256": "501232c2f3a93dd96eb4079a1ccc7fe5814e31c2893628fbe3b84903017eb32c",
+        "size": "12886"
+      },
+      "services/qualification/cli.ts": {
+        "sha256": "a504e1382675f6f8b05429e3f323e9245209a8af868818127913c8737481ad55",
+        "size": "1477"
+      },
+      "services/qualification/recovery.ts": {
+        "sha256": "6ee99cb0bd1ad6b469b7649e63319896e59ad6100d1f1666fce46f606d3ea0b5",
+        "size": "6579"
+      },
+      "spec/decisions/0015-qualification-v0.9.md": {
+        "sha256": "683542cd2c37916a6551b0ab72492240849f2f83d6343c8e661a32b6bca56612",
+        "size": "10909"
+      },
+      "spec/decisions/0016-suspensions-locales-v0.9.md": {
+        "sha256": "76faa0423636656e384e3925b95673962e107e18bcb4a2901c724a6242b285d6",
+        "size": "7663"
+      },
+      "spec/fixtures/v0.9/frozen.TEST_ONLY.json": {
+        "sha256": "1d50515e3445ba107bcce6bd27661bf894f99eaeeec848177c14992333d5a6ea",
+        "size": "32632"
+      },
+      "spec/fixtures/v0.9/hold.TEST_ONLY.json": {
+        "sha256": "b08f910e29b76788ad46807883882b953dd0bee56367ea829f50d5afffe004a7",
+        "size": "59778"
+      },
+      "spec/fixtures/v0.9/interrupted-checkpoint.TEST_ONLY.json": {
+        "sha256": "ebbdffd0d4a0b0fcbe6e5b897c5f2aa77a8287928c40a375fe55693592a724b7",
+        "size": "107608"
+      },
+      "spec/fixtures/v0.9/keys.TEST_ONLY.json": {
+        "sha256": "390afc6f30c9b3411730ecfaf21c8947fb9c0a3e8e1df40ccdbef09ed7f6413b",
+        "size": "1718"
+      },
+      "spec/fixtures/v0.9/onchain-hold.TEST_ONLY.json": {
+        "sha256": "e0bc00d9e7edc10f37cfafdab385132f88a5c8c982096287ff36bd6d1b8b5335",
+        "size": "100202"
+      },
+      "spec/fixtures/v0.9/receipts.TEST_ONLY.jsonl": {
+        "sha256": "e14796334380a20b98d051a556bbd94569c0c9e9d7b98f68f63d18ddc13dbc11",
+        "size": "107670"
+      },
+      "spec/fixtures/v0.9/root.TEST_ONLY.json": {
+        "sha256": "389b08ec8a2949bffa26224c7a0c9bb83aff339d68d99a2e9e097f215d51b405",
+        "size": "50873"
+      },
+      "spec/profiles/development.lock.json": {
+        "sha256": "18653a429ecb42e08e7053b4ada46a4d245721859281c5927d60894494ed3d46",
+        "size": "4942"
+      },
+      "spec/qualification/README.md": {
+        "sha256": "1dcb03efd75b846f6f72dd8139dd11d860467600c55df90c270ebeb2223527fb",
+        "size": "7930"
+      },
+      "spec/qualification/campaign.example.json": {
+        "sha256": "0e7142bc5a3707d23382232203788f5c2fb6c957f47a6c4691627f875afbea55",
+        "size": "621"
+      },
+      "spec/schemas/protocol.schema.json": {
+        "sha256": "9fe7018334b0459c16fc3e0169364583b7755b92d4459a00e13c5a99816aa699",
+        "size": "261530"
+      },
+      "spec/schemas/qualification_campaign.schema.json": {
+        "sha256": "29611d38bd6538cc04dfc1c0ecab9790984e96733505171e8d0c660a1b6b3835",
+        "size": "207"
+      },
+      "spec/schemas/qualification_policy.schema.json": {
+        "sha256": "87b8aecf355f0ecb75e8bac0bd7a1f7283ebb17f255373e4efdd699173e145c1",
+        "size": "203"
+      },
+      "spec/schemas/qualification_receipt_report.schema.json": {
+        "sha256": "1975ff1567f00e2b1e45e5c4e6352fecd46f906c650df3a969985a49be09a26c",
+        "size": "219"
+      },
+      "spec/schemas/recovery_bundle.schema.json": {
+        "sha256": "2dd95c37a78285b94ac86f0aae4a55eafe2f342309b27597b85128e5348b51e5",
+        "size": "193"
+      },
+      "spec/schemas/recovery_config.schema.json": {
+        "sha256": "fa5670a256638fd096c41c266ad23bd32c702e934bcac556e51c2bafc3fa71e7",
+        "size": "193"
+      },
+      "spec/schemas/recovery_mirror_statement.schema.json": {
+        "sha256": "6ef9b0a6b28201ae44353c3ff4a9f0d01a3bca71f8f653c3a226bc5ffcecfd4d",
+        "size": "213"
+      },
+      "spec/schemas/recovery_order.schema.json": {
+        "sha256": "61a2d76b8cc243f336a208691a122771936974bd66a8481c035cf7f5b6b22a89",
+        "size": "191"
+      },
+      "spec/schemas/recovery_root.schema.json": {
+        "sha256": "a8f79eaeac6096d6d4d49a04642742ac6b385dfc2e1226d00735157408d99c40",
+        "size": "189"
+      },
+      "spec/schemas/recovery_rotation.schema.json": {
+        "sha256": "5a60539d59ee72695d68aa0620d76368a7b03ffd4c257d41b0546bcb22b1f364",
+        "size": "197"
+      },
+      "spec/schemas/security_hold_tx.schema.json": {
+        "sha256": "790e3230f03b8a4d779a36b5b6bf8511852df096790db4a2d16a4da72a6ddba4",
+        "size": "195"
+      },
+      "web/src/citizen-audit.ts": {
+        "sha256": "401d47db61b79effe04c0725fc1a3e6f357f5a576745a1c63ba7eeac79d8f557",
+        "size": "22517"
+      },
+      "web/src/core.ts": {
+        "sha256": "0473036ff7e508982dde53c10e35485cdc35c51fc8e2c4305787588ee1568967",
+        "size": "11540"
+      },
+      "web/src/protocol.ts": {
+        "sha256": "60506c637292cf99fc54ca764309d2e5cd58e131a035400cadb340dcfc076e88",
+        "size": "6867"
+      },
+      "web/src/pwa/network.ts": {
+        "sha256": "aee88dc7cb0f17d6b3ea0189f89bca50b1af09ca91cb20bf029e2305e2b61437",
+        "size": "16866"
+      },
+      "web/test/qualification.test.ts": {
+        "sha256": "11e7307d2ffa4187ecd65f11cd5cfd1a4c502f108411233894e0c09915e5f376",
+        "size": "4411"
+      },
+      "web/test/recovery.test.ts": {
+        "sha256": "eab2ad3797d1bee809dbd60d2ca2c6a269b4ebb116c1e35d9a5950c119716b1f",
+        "size": "3755"
+      }
+    }
+  },
+  "limitations": [
+    "V0.9 public qualification remains incomplete. Local on-chain safety exercises do not demonstrate ten-million ballot capacity or a fully qualified operational incident process.",
+    "Fuzzing is time-bounded and covers the selected parsers/proofs; it is not a cryptographic or application audit.",
+    "Windows abrupt-process tests cover SIGKILL/restart after a durable transaction, not electrical power loss or rollback of a host-controlled backup.",
+    "The frozen context, recovery root and qualification reviewer policy must be authenticated independently of the evidence they verify.",
+    "Physical operator separation, timing truth and deployment independence cannot be established from labels or signatures alone.",
+    "The existing PWA and workshop retain their genesis and version 0.8 interface. Recovery roots were installed only in isolated PUBLIC_TEST_ONLY local exercises; no public deployment or emergency reserve activation was performed."
+  ],
+  "scope_choice": "Prepare and test locally; independent WAN infrastructure and external audits not yet available",
+  "local_safety_decision": "spec/decisions/0016-suspensions-locales-v0.9.md"
+}

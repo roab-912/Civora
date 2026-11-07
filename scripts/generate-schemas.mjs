@@ -6,6 +6,8 @@ import { consensusSchemas } from "./consensus-schemas.mjs";
 import { citizenSchemas } from "./citizen-schemas.mjs";
 import { pwaSchemas } from "./pwa-schemas.mjs";
 import { notificationSchemas } from "./notification-schemas.mjs";
+import { recoverySchemas } from "./recovery-schemas.mjs";
+import { qualificationSchemas } from "./qualification-schemas.mjs";
 
 function writeGenerated(path, content) {
   if (process.argv.includes("--check")) {
@@ -244,6 +246,8 @@ consensusSchemas(definitions, { object, list, ref, id, uint, constant });
 citizenSchemas(definitions, { object, list, ref, id, uint, constant });
 pwaSchemas(definitions, { object, list, ref, id, uint, constant });
 notificationSchemas(definitions, { object, list, ref, id, uint, constant });
+recoverySchemas(definitions, { object, list, ref, id, uint, constant });
+qualificationSchemas(definitions, { object, list, ref, id, uint, constant });
 mkdirSync("spec/schemas", { recursive: true });
 writeGenerated(
   "spec/schemas/protocol.schema.json",
@@ -335,6 +339,16 @@ for (const key of [
   "push_unsubscribe",
   "push_message",
   "news_item",
+  "recovery_root",
+  "recovery_order",
+  "recovery_mirror_statement",
+  "recovery_bundle",
+  "recovery_rotation",
+  "recovery_config",
+  "security_hold_tx",
+  "qualification_policy",
+  "qualification_campaign",
+  "qualification_receipt_report",
 ])
   writeGenerated(
     `spec/schemas/${key}.schema.json`,

@@ -390,6 +390,8 @@ export class Client {
   }
   canWrite() {
     return (
+      !(this.configuration?.path.entry.value as Row | undefined)?.config
+        ?.recovery &&
       navigator.onLine &&
       !this.offline &&
       !this.stale &&
@@ -398,6 +400,13 @@ export class Client {
     );
   }
   async post(path: string, raw: string): Promise<Row> {
+    if (
+      (this.configuration?.path.entry.value as Row | undefined)?.config
+        ?.recovery
+    )
+      throw Error(
+        "ERR_SECURITY_READ_ONLY: ce profil de reprise nécessite un client autorisé ; consultation seule.",
+      );
     if (!this.canWrite()) throw Error("ERR_OFFLINE_OR_STALE");
     for (const root of this.choice.api_roots) {
       try {

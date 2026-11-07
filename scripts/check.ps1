@@ -1,4 +1,4 @@
-param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork,[switch]$SkipPWA)
+param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork,[switch]$SkipPWA,[switch]$Qualification)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $projectRoot
@@ -38,7 +38,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Go vet failed' }
     $nodeDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnode
     if ($LASTEXITCODE -ne 0) { throw 'Node dependency inspection failed' }
-    if ($nodeDependencies -contains 'civora/internal/simulation') { throw 'Simulation linked into civnode' }
+    if ($nodeDependencies -contains 'civora/internal/simulation' -or $nodeDependencies -contains 'civora/internal/recoverytest') { throw 'Test-only adapters linked into civnode' }
     & $goExe test -tags civora_sim ./... -count=1 -timeout 300s
     if ($LASTEXITCODE -ne 0) { throw 'Governance simulation tests failed' }
     & $goExe vet -tags civora_sim ./...
@@ -58,7 +58,7 @@ try {
     & node scripts/audit-citizen.mjs -input spec/fixtures/v0.6/record -manifest spec/fixtures/v0.6/network.json
     if ($LASTEXITCODE -ne 0) { throw 'Independent TypeScript citizen audit failed' }
     $networkDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnet
-    if ($LASTEXITCODE -ne 0 -or $networkDependencies -contains 'civora/internal/simulation') { throw 'Network node dependency isolation failed' }
+    if ($LASTEXITCODE -ne 0 -or $networkDependencies -contains 'civora/internal/simulation' -or $networkDependencies -contains 'civora/internal/recoverytest') { throw 'Network node dependency isolation failed' }
     if (-not $SkipNetwork) {
         & node scripts/test-consensus.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Native CometBFT acceptance failed' }
@@ -108,6 +108,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Independent Go archive replay failed' }
         & node scripts/audit-electionguard.mjs -in $publicArchive
         if ($LASTEXITCODE -ne 0) { throw 'Independent TypeScript crypto audit failed' }
+    }
+    if ($Qualification) {
+        & node scripts/test-qualification.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Local qualification prerequisites failed' }
     }
     if ($Scale) {
         & node scripts/check-eligibility-scale.mjs

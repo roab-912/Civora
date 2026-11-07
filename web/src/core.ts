@@ -17,11 +17,17 @@ import {
 } from "./protocol.js";
 import { checkActivation, nextRegistry, validateRegistry } from "./registry.js";
 import { stateRoot } from "./tree.js";
+import {
+  sha3,
+  verifyOnChainRecovery,
+  type RecoveryBundle,
+} from "../../services/qualification/recovery.js";
 export class Engine {
   config: Config;
   accounts = new Map<string, Account>();
   height = 0n;
   time = 0n;
+  security?: { last_counter: string; orders: RecoveryBundle[] };
   upgrades = new Map<
     string,
     {
@@ -44,6 +50,36 @@ export class Engine {
     if (chainID(this.config.network_id) !== this.config.chain_id)
       throw Error("invalid chain_id");
     validateRegistry(this.config.registry);
+    if (this.config.recovery) {
+      const r = this.config.recovery;
+      if (
+        r.root.network_id !== this.config.network_id ||
+        r.root.mode !== "development_TEST_ONLY" ||
+        r.protected_profile !== this.config.voting_profile ||
+        sha3(Buffer.from(canonical(r.root))) !== r.root_sha3_384
+      )
+        throw Error("ERR_RECOVERY_GENESIS");
+      const root = r.root;
+      if (
+        uint(root.recovery_epoch) === 0n ||
+        uint(root.not_before_ms) >= uint(root.expires_at_ms)
+      )
+        throw Error("ERR_RECOVERY_ROOT_VALIDITY");
+      const members = [...root.members, ...root.mirrors];
+      if (
+        new Set(members.map((m) => m.member_id)).size !== 19 ||
+        new Set(members.map((m) => m.public_key)).size !== 19 ||
+        root.members.filter((m) => m.college === "technical").length !== 7 ||
+        root.members.filter((m) => m.college === "civic").length !== 7
+      )
+        throw Error("ERR_RECOVERY_KEY_SEPARATION");
+      for (const m of members) {
+        const b = Buffer.from(m.public_key, "base64url");
+        if (b.length !== 1952 || b.toString("base64url") !== m.public_key)
+          throw Error("ERR_RECOVERY_ENCODING");
+      }
+      this.security = { last_counter: "0", orders: [] };
+    }
     if (uint(this.config.registry.protocol_epoch) > supportedEpoch)
       throw Error("ERR_UNSUPPORTED_EPOCH");
     let r = this.config.registry,
@@ -76,6 +112,19 @@ export class Engine {
     ];
     for (const [key, value] of this.accounts)
       entries.push({ table: "accounts", key, value });
+    if (this.security) {
+      entries.push({
+        table: "security",
+        key: "recovery",
+        value: { last_counter: this.security.last_counter },
+      });
+      for (const b of this.security.orders)
+        entries.push({
+          table: "security_orders",
+          key: b.order.counter,
+          value: b,
+        });
+    }
     for (const [key, value] of this.upgrades)
       entries.push({ table: "upgrades", key, value });
     entries.sort((a, b) =>
@@ -105,6 +154,7 @@ export class Engine {
       time: this.time,
       upgrades: structuredClone(this.upgrades),
       supportedEpoch: this.supportedEpoch,
+      security: structuredClone(this.security),
     });
     return n;
   }
@@ -145,6 +195,38 @@ export class Engine {
         n.upgrades.get(a.plan_id)!.status = "activated";
         emit("protocol.activate", a.plan_id);
       }
+    if ((b.security_orders?.length ?? 0) > 4)
+      throw Error("ERR_SECURITY_BUDGET");
+    for (const bundle of b.security_orders ?? []) {
+      const cfg = n.config.recovery;
+      if (!cfg || !n.security) throw Error("ERR_RECOVERY_NOT_CONFIGURED");
+      if (n.security.orders.length >= 10000)
+        throw Error("ERR_RECOVERY_CAPACITY");
+      const order = verifyOnChainRecovery(
+        Buffer.from(canonical(cfg.root)),
+        cfg.root_sha3_384,
+        Buffer.from(canonical(bundle)),
+        n.time,
+        uint(n.security.last_counter),
+      );
+      if (order.type !== "security.hold")
+        throw Error("ERR_RECOVERY_ACTION_UNAVAILABLE");
+      if (order.scope_kind === "module") {
+        const module = n.config.registry.modules.find(
+          (m) => m.id === order.scope_id,
+        );
+        if (!module) throw Error("ERR_SECURITY_UNKNOWN_MODULE");
+        if (
+          module.operations.some((op) =>
+            ["state.hash", "consensus.sign"].includes(op),
+          )
+        )
+          throw Error("ERR_SECURITY_OFFCHAIN_REQUIRED");
+      }
+      n.security.last_counter = order.counter;
+      n.security.orders.push(bundle);
+      emit("security.hold", domain("recovery/order", order));
+    }
     for (const tx of b.transactions) {
       n.applyTransaction(tx);
       emit(tx.body.type, tx.body.actor_id);
@@ -171,6 +253,12 @@ export class Engine {
     );
     if (!suite || suite.parameters.format !== "ed25519")
       throw Error("ERR_SUITE");
+    if (
+      this.security?.orders.some(
+        (b) => b.order.scope_kind === "module" && b.order.scope_id === suite.id,
+      )
+    )
+      throw Error("ERR_SECURITY_MODULE_REVIEW");
     const nonce = uint(b.nonce);
     if (nonce === 0xffffffffffffffffn) throw Error("ERR_NONCE_OVERFLOW");
     const p = b.payload as Payload;

@@ -1,0 +1,3 @@
+# Canonical, hashed qualification fixtures must retain their exact bytes.
+spec/fixtures/v0.9/* -text
+spec/qualification/campaign.example.json -text

@@ -7,6 +7,7 @@ import (
 	"civora/internal/eligibility"
 	"civora/internal/governance"
 	"civora/internal/ports"
+	"civora/internal/recovery"
 	"civora/internal/semaphore"
 	"civora/internal/state"
 	"civora/internal/upgrade"
@@ -31,6 +32,7 @@ type Config struct {
 	Activations   []upgrade.Armed     `json:"activations"`
 	Governance    *governance.Config  `json:"governance,omitempty"`
 	Eligibility   *eligibility.Config `json:"eligibility,omitempty"`
+	Recovery      *recovery.Config    `json:"recovery,omitempty"`
 }
 type Payload struct {
 	SigningPK  string `json:"signing_pk"`
@@ -66,9 +68,10 @@ type Account struct {
 	EligibilityIndex *string  `json:"eligibility_index,omitempty"`
 }
 type Block struct {
-	Height       string        `json:"height"`
-	TimeMS       string        `json:"time_ms"`
-	Transactions []Transaction `json:"transactions"`
+	Height         string            `json:"height"`
+	TimeMS         string            `json:"time_ms"`
+	Transactions   []Transaction     `json:"transactions"`
+	SecurityOrders []recovery.Bundle `json:"security_orders,omitempty"`
 }
 type Event struct {
 	ID      string `json:"id"`
@@ -95,6 +98,7 @@ type Engine struct {
 	Governance     *governance.State
 	adapters       Adapters
 	Eligibility    *eligibility.Tree
+	Security       *recovery.LedgerState
 }
 
 type Adapters struct {
@@ -128,6 +132,15 @@ func NewWithAdapters(raw []byte, supportedEpoch uint64, adapters Adapters) (*Eng
 		return nil, fmt.Errorf("ERR_UNSUPPORTED_EPOCH")
 	}
 	n := &Engine{Config: c, Accounts: map[string]Account{}, SupportedEpoch: supportedEpoch, upgrades: map[string]UpgradeState{}}
+	if c.Recovery != nil {
+		if c.Mode != "development" {
+			return nil, fmt.Errorf("ERR_RECOVERY_DEVELOPMENT_ONLY")
+		}
+		if err := c.Recovery.ValidateGenesis(c.NetworkID, c.VotingProfile); err != nil {
+			return nil, err
+		}
+		n.Security = recovery.NewLedger()
+	}
 	if adapters.Effects == nil {
 		adapters.Effects = effects.LedgerOnly{}
 	}
@@ -254,6 +267,7 @@ func (e *Engine) Snapshot() State {
 		network.Eligibility = &meta
 	}
 	entries := []state.Entry{{Table: "network", Key: "config", Value: network}}
+	entries = append(entries, e.Security.Entries()...)
 	for id, a := range e.Accounts {
 		entries = append(entries, state.Entry{Table: "accounts", Key: id, Value: a})
 	}
@@ -280,6 +294,7 @@ func (e *Engine) Snapshot() State {
 func (e *Engine) Root() string { return state.Root(e.Snapshot().Entries) }
 func (e *Engine) Clone() *Engine {
 	n := *e
+	n.Security = e.Security.Clone()
 	if e.Eligibility != nil {
 		n.Eligibility = e.Eligibility.Clone()
 	}
@@ -321,6 +336,9 @@ func (e *Engine) BeforeBlock(height string) error {
 	return nil
 }
 func (e *Engine) Authorize(epoch, op, moduleID string, historical bool) error {
+	if !historical && e.Security.ModuleBlocked(moduleID) {
+		return fmt.Errorf("ERR_SECURITY_MODULE_REVIEW")
+	}
 	return e.Config.Registry.Authorize(epoch, op, moduleID, historical)
 }
 
@@ -390,6 +408,9 @@ func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
 		n.upgrades[a.PlanID] = u
 		emit("protocol.activate", a.PlanID)
 	}
+	if err := n.AcceptSecurity(b.SecurityOrders, n.Time, emit); err != nil {
+		return nil, nil, err
+	}
 	if n.Governance != nil {
 		if err := n.Governance.Advance(n.execution(e, emit)); err != nil {
 			return nil, nil, err
@@ -410,6 +431,7 @@ func (e *Engine) Apply(raw []byte) (*Engine, []Event, error) {
 		emit(tx.Body.Type, subject)
 	}
 	if n.Governance != nil {
+		n.InterruptAffected(n.Time, emit)
 		if err := n.Governance.Qualify(n.execution(e, emit)); err != nil {
 			return nil, nil, err
 		}

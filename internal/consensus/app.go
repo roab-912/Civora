@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -115,7 +116,13 @@ func (a *Application) PrepareProposal(_ context.Context, r *abci.RequestPrepareP
 		return nil, e
 	}
 	var size int64
-	for _, tx := range r.Txs {
+	transactions := append([][]byte{}, r.Txs...)
+	if p, ok := m.(interface{ TransactionPriority([]byte) int }); ok {
+		sort.SliceStable(transactions, func(i, j int) bool {
+			return p.TransactionPriority(transactions[i]) < p.TransactionPriority(transactions[j])
+		})
+	}
+	for _, tx := range transactions {
 		if len(tx) > 256*1024 || size+int64(len(tx)) > r.MaxTxBytes {
 			continue
 		}

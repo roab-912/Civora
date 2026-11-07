@@ -4,6 +4,7 @@ import (
 	"civora/internal/codec"
 	"civora/internal/core"
 	"civora/internal/governance"
+	"civora/internal/recovery"
 	"civora/internal/replica"
 	"civora/internal/state"
 	"fmt"
@@ -58,13 +59,27 @@ func (l *Ledger) Root() string   { return l.Engine.Root() }
 func (l *Ledger) Active() bool {
 	return l.Engine.Governance != nil && l.Engine.Governance.LivePolls() > 0
 }
-func (l *Ledger) Check(tx []byte) error { return l.Engine.CheckTx(tx) }
+func (l *Ledger) TransactionPriority(raw []byte) int { return recovery.Priority(raw) }
+func (l *Ledger) Check(tx []byte) error {
+	if recovery.IsCommand(tx) {
+		return l.Engine.CheckSecurity(tx)
+	}
+	return l.Engine.CheckTx(tx)
+}
 func (l *Ledger) Apply(b replica.Block) (replica.Machine, error) {
 	block := core.Block{Height: b.Height, TimeMS: b.TimeMS, Transactions: []core.Transaction{}}
 	for _, encoded := range b.Transactions {
 		raw, e := codec.Blob(encoded)
 		if e != nil {
 			return nil, e
+		}
+		if recovery.IsCommand(raw) {
+			order, e := recovery.DecodeCommand(raw)
+			if e != nil {
+				return nil, e
+			}
+			block.SecurityOrders = append(block.SecurityOrders, order)
+			continue
 		}
 		var tx core.Transaction
 		if e = codec.Decode(raw, "transaction", &tx); e != nil {

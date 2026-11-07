@@ -1,6 +1,6 @@
 {
   "name": "civora",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -40,7 +40,9 @@
     "crypto:electionguard:review": "npm run build && node scripts/review-electionguard.mjs",
     "crypto:electionguard:gate": "npm run build && node scripts/review-electionguard.mjs --require-qualified",
     "crypto:electionguard:audit": "npm run build && node scripts/audit-electionguard.mjs",
-    "artifacts:electionguard:fetch": "node scripts/review-electionguard.mjs --fetch --check-local"
+    "artifacts:electionguard:fetch": "node scripts/review-electionguard.mjs --fetch --check-local",
+    "qualify": "npm run build && node dist/services/qualification/cli.js",
+    "test:qualification": "npm run build && node scripts/test-qualification.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

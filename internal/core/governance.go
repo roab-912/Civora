@@ -44,6 +44,9 @@ func (e *Engine) execution(previous *Engine, emit func(string, string)) governan
 	return x
 }
 func (e *Engine) applyTransaction(tx Transaction, emit func(string, string), position string) error {
+	if err := e.SecurityCheckTransaction(tx); err != nil {
+		return err
+	}
 	b := tx.Body
 	if (e.Config.VotingProfile == "transport_dev_v0_5" || e.Config.VotingProfile == "transport_dev_v0_6") && (b.Type == "vote.cast" || b.Type == "poll.tally") {
 		return fmt.Errorf("ERR_PARTITION_TRANSPORT_REQUIRED")

@@ -7,6 +7,10 @@ import {
   sign,
   verify,
 } from "node:crypto";
+import type {
+  RecoveryRoot,
+  RecoveryBundle,
+} from "../../services/qualification/recovery.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
@@ -207,11 +211,17 @@ export interface Config {
   mode: "development";
   registry: Registry;
   activations: Armed[];
+  recovery?: {
+    root: RecoveryRoot;
+    root_sha3_384: string;
+    protected_profile: "inline_dev";
+  };
 }
 export interface Block {
   height: string;
   time_ms: string;
   transactions: Transaction[];
+  security_orders?: RecoveryBundle[];
 }
 export interface Account {
   signing_pk: string;

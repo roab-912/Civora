@@ -5,6 +5,7 @@ import (
 	"civora/internal/consensus"
 	"civora/internal/electionguard"
 	"civora/internal/ports"
+	"civora/internal/recovery"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
@@ -23,12 +24,16 @@ type Frozen struct {
 	ArchiveKeys   []string                   `json:"archive_keys"`
 	EligibleCount string                     `json:"eligible_count"`
 	Audit         *AuditConfig               `json:"audit,omitempty"`
+	Recovery      *recovery.Config           `json:"recovery,omitempty"`
 }
 
 func (f Frozen) ID() string {
 	values := []any{f.Context.NetworkID, f.Context.PollID, f.Context.Epoch, f.Context.Root, f.Context.Depth, f.Context.Partitions, f.ProposalID, f.GuardianIDs, f.Ceremony, f.Opens, f.Closes, f.SourceHeight, f.Lanes, f.ArchiveKeys, f.EligibleCount}
 	if f.Audit != nil {
 		values = append(values, f.Audit)
+	}
+	if f.Recovery != nil {
+		values = append(values, f.Recovery)
 	}
 	return codec.Hash("scale/open", values)
 }
@@ -46,6 +51,15 @@ func (f Frozen) Election() (*electionguard.Verifier, *electionguard.Election, er
 	return v, c, e
 }
 func (f Frozen) Validate(mainChain string) error {
+	if f.Recovery != nil {
+		profile := "transport_dev_v0_5"
+		if f.Audit != nil {
+			profile = "transport_dev_v0_6"
+		}
+		if err := f.Recovery.ValidateGenesis(f.Context.NetworkID, profile); err != nil {
+			return err
+		}
+	}
 	if e := codec.Decode(codec.Must(f), "partition_frozen", new(Frozen)); e != nil {
 		return e
 	}
@@ -186,4 +200,5 @@ type Summary struct {
 	BatchRoot        string `json:"batch_root"`
 	AdmissionSealed  bool   `json:"admission_sealed"`
 	ProcessingSealed bool   `json:"processing_sealed"`
+	Interrupted      bool   `json:"interrupted,omitempty"`
 }

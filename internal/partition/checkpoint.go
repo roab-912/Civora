@@ -71,6 +71,9 @@ func VerifyCheckpoint(f Frozen, cp Checkpoint, previous *Verified) (*Verified, e
 	if e != nil {
 		return nil, e
 	}
+	if s.Interrupted {
+		return nil, fmt.Errorf("ERR_SECURITY_INTERRUPTED")
+	}
 	if cp.Proof.Path.Entry.Table != "lane_checkpoint" || string(codec.Must(cp.Proof.Path.Entry.Key)) != string(codec.Must(f.Context.PollID)) || cp.Proof.Height != s.Height || s.NetworkID != f.Context.NetworkID || s.PollID != f.Context.PollID || s.ContextID != f.Context.Checkpoint || s.Epoch != f.Context.Epoch {
 		return nil, fmt.Errorf("checkpoint context/path")
 	}
@@ -196,7 +199,7 @@ func Global(f Frozen, checkpoints map[string]*Verified) (string, string, error) 
 	count := uint64(0)
 	for lane := range f.Lanes {
 		cp := checkpoints[fmt.Sprint(lane)]
-		if cp == nil || !cp.Summary.ProcessingSealed {
+		if cp == nil || !cp.Summary.ProcessingSealed || cp.Summary.Interrupted {
 			return "", "", fmt.Errorf("missing final lane %d", lane)
 		}
 		n, _ := codec.Uint(cp.Summary.Counted)

@@ -549,6 +549,55 @@
             "value"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "security"
+            },
+            "key": {
+              "const": "recovery"
+            },
+            "value": {
+              "type": "object",
+              "properties": {
+                "last_counter": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "last_counter"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "table": {
+              "const": "security_orders"
+            },
+            "key": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "value": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_bundle"
+            }
+          },
+          "required": [
+            "table",
+            "key",
+            "value"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -591,7 +640,9 @@
             "proposal.failed_tally",
             "grant.expired",
             "grant.revoked",
-            "poll.empty"
+            "poll.empty",
+            "security.hold",
+            "proposal.interrupted"
           ]
         },
         "subject": {
@@ -1770,6 +1821,9 @@
         },
         "eligibility": {
           "$ref": "https://civora.invalid/v0.1/protocol#/$defs/eligibility_config"
+        },
+        "recovery": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_config"
         }
       },
       "required": [
@@ -2110,6 +2164,13 @@
             "$ref": "https://civora.invalid/v0.1/protocol#/$defs/transaction"
           },
           "maxItems": 8192
+        },
+        "security_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_bundle"
+          },
+          "maxItems": 4
         }
       },
       "required": [
@@ -3225,7 +3286,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -3441,7 +3503,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -3660,7 +3723,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -3885,7 +3949,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -4100,7 +4165,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -4316,7 +4382,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -4535,7 +4602,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -4760,7 +4828,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -4990,7 +5059,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -5216,7 +5286,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -5440,7 +5511,8 @@
                 "expired",
                 "failed_setup",
                 "failed_window",
-                "failed_tally"
+                "failed_tally",
+                "interrupted"
               ]
             },
             "policy": {
@@ -5631,7 +5703,8 @@
             "expired",
             "failed_setup",
             "failed_window",
-            "failed_tally"
+            "failed_tally",
+            "interrupted"
           ]
         },
         "protocol_epoch": {
@@ -7081,6 +7154,9 @@
         },
         "audit": {
           "$ref": "https://civora.invalid/v0.1/protocol#/$defs/audit_config"
+        },
+        "recovery": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_config"
         }
       },
       "required": [
@@ -7117,6 +7193,9 @@
         },
         "source": {
           "$ref": "https://civora.invalid/v0.1/protocol#/$defs/consensus_trust"
+        },
+        "recovery": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_config"
         }
       },
       "required": [
@@ -7370,6 +7449,9 @@
         },
         "processing_sealed": {
           "type": "boolean"
+        },
+        "interrupted": {
+          "const": true
         }
       },
       "required": [
@@ -8206,7 +8288,8 @@
             "provisional",
             "certified",
             "contested",
-            "failed_certification"
+            "failed_certification",
+            "interrupted"
           ]
         },
         "decryption_record": {
@@ -8750,6 +8833,1030 @@
         "proposal_id",
         "opened_at_ms",
         "source_height"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_root": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "mode": {
+          "enum": [
+            "development_TEST_ONLY",
+            "operator"
+          ]
+        },
+        "not_before_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "expires_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "college": {
+                "enum": [
+                  "technical",
+                  "civic"
+                ]
+              },
+              "public_key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 2603,
+                "maxLength": 2603
+              }
+            },
+            "required": [
+              "member_id",
+              "college",
+              "public_key"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 14,
+          "minItems": 14
+        },
+        "mirrors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "public_key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 2603,
+                "maxLength": 2603
+              }
+            },
+            "required": [
+              "member_id",
+              "public_key"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      },
+      "required": [
+        "v",
+        "network_id",
+        "recovery_epoch",
+        "mode",
+        "not_before_ms",
+        "expires_at_ms",
+        "members",
+        "mirrors"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_order": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "counter": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "type": {
+          "enum": [
+            "security.hold",
+            "security.arm_reserve",
+            "recovery.publish"
+          ]
+        },
+        "scope_kind": {
+          "enum": [
+            "module",
+            "profile",
+            "poll",
+            "effect",
+            "network"
+          ]
+        },
+        "scope_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "reference_sha3_384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "reference_point": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "public_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "starts_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "expires_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "v",
+        "network_id",
+        "recovery_epoch",
+        "counter",
+        "type",
+        "scope_kind",
+        "scope_id",
+        "reference_sha3_384",
+        "reference_point",
+        "public_reason",
+        "starts_at_ms",
+        "expires_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_mirror_statement": {
+      "type": "object",
+      "properties": {
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "recovery_epoch": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "counter": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "root_sha3_384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "order_sha3_384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "observed_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "expires_at_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        }
+      },
+      "required": [
+        "network_id",
+        "recovery_epoch",
+        "counter",
+        "root_sha3_384",
+        "order_sha3_384",
+        "observed_at_ms",
+        "expires_at_ms"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_bundle": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_order"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 4412,
+                "maxLength": 4412
+              }
+            },
+            "required": [
+              "member_id",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 14
+        },
+        "mirrors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "statement": {
+                "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_mirror_statement"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 4412,
+                "maxLength": 4412
+              }
+            },
+            "required": [
+              "member_id",
+              "statement",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "order",
+        "signatures",
+        "mirrors"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_rotation": {
+      "type": "object",
+      "properties": {
+        "next_root": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_root"
+        },
+        "approval_sha3_384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "old_signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 4412,
+                "maxLength": 4412
+              }
+            },
+            "required": [
+              "member_id",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 14
+        },
+        "new_signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "member_id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._/-]{0,95}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]+$",
+                "minLength": 4412,
+                "maxLength": 4412
+              }
+            },
+            "required": [
+              "member_id",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 14
+        }
+      },
+      "required": [
+        "next_root",
+        "approval_sha3_384",
+        "old_signatures",
+        "new_signatures"
+      ],
+      "additionalProperties": false
+    },
+    "recovery_config": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_root"
+        },
+        "root_sha3_384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "protected_profile": {
+          "enum": [
+            "inline_dev",
+            "transport_dev_v0_5",
+            "transport_dev_v0_6"
+          ]
+        }
+      },
+      "required": [
+        "root",
+        "root_sha3_384",
+        "protected_profile"
+      ],
+      "additionalProperties": false
+    },
+    "security_hold_tx": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "security.hold"
+        },
+        "value": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/recovery_bundle"
+        }
+      },
+      "required": [
+        "type",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "qualification_policy": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "mode": {
+          "enum": [
+            "operator",
+            "development_TEST_ONLY"
+          ]
+        },
+        "reviewers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "organization": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96
+              },
+              "public_key": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "organization",
+              "public_key"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5,
+          "minItems": 5
+        }
+      },
+      "required": [
+        "v",
+        "mode",
+        "reviewers"
+      ],
+      "additionalProperties": false
+    },
+    "qualification_campaign": {
+      "type": "object",
+      "properties": {
+        "v": {
+          "const": "1"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "source_revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "mode": {
+          "enum": [
+            "real",
+            "development_TEST_ONLY"
+          ]
+        },
+        "installation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "size": {
+                  "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "size"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "receipts": {
+          "type": "object",
+          "properties": {
+            "nominal": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "size": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "peak": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "size": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "hot_lane": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "size": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "raw_samples": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "size": {
+                    "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "size"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 64
+            }
+          },
+          "required": [
+            "nominal",
+            "peak",
+            "hot_lane",
+            "raw_samples"
+          ],
+          "additionalProperties": false
+        },
+        "verification": {
+          "type": "object",
+          "properties": {
+            "envelopes": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "full_checks_per_second": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "backlog_recovered_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "certified_after_close_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "challenge_window_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "independent_implementations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96
+              },
+              "maxItems": 8
+            },
+            "evidence": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "size": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "envelopes",
+            "full_checks_per_second",
+            "backlog_recovered_ms",
+            "certified_after_close_ms",
+            "challenge_window_ms",
+            "independent_implementations",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "mobile": {
+          "type": "object",
+          "properties": {
+            "physical": {
+              "type": "boolean"
+            },
+            "generation_p95_ms": {
+              "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+            },
+            "evidence": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1024
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "size": {
+                      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "sha256",
+                    "size"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "physical",
+            "generation_p95_ms",
+            "evidence"
+          ],
+          "additionalProperties": false
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "evidence": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "size": {
+                    "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "size"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "name",
+              "passed",
+              "evidence"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 64
+        },
+        "audits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "cryptographic",
+                  "application"
+                ]
+              },
+              "organization": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96
+              },
+              "source_revision": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "report": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "size": {
+                    "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                  }
+                },
+                "required": [
+                  "path",
+                  "sha256",
+                  "size"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "kind",
+              "organization",
+              "source_revision",
+              "report"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 16
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 96
+              },
+              "severity": {
+                "enum": [
+                  "critical",
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "open",
+                  "fixed",
+                  "accepted"
+                ]
+              },
+              "remediation": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "path": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "sha256": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{64}$"
+                      },
+                      "size": {
+                        "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "sha256",
+                      "size"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "severity",
+              "status",
+              "remediation"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 1024
+        },
+        "attestations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "public_key": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "signature": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{128}$"
+              }
+            },
+            "required": [
+              "public_key",
+              "signature"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 5
+        }
+      },
+      "required": [
+        "v",
+        "network_id",
+        "source_revision",
+        "mode",
+        "installation",
+        "receipts",
+        "verification",
+        "mobile",
+        "scenarios",
+        "audits",
+        "findings",
+        "attestations"
+      ],
+      "additionalProperties": false
+    },
+    "qualification_receipt_report": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "const": "civic-receipt-measurements-1"
+        },
+        "network_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "poll_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "window_start_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "window_end_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "partitions": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "attempts": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "verified_unique_receipts": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "duplicates": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "failed_attempts": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "receipt_p95_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "receipt_p99_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "receipt_max_ms": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "histogram_cap_ms": {
+          "const": "60000"
+        },
+        "minimum_receipts_per_second": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "per_second": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+          },
+          "maxItems": 86400
+        },
+        "per_lane": {
+          "type": "array",
+          "items": {
+            "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+          },
+          "maxItems": 256
+        },
+        "average_envelope_bytes": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "maximum_envelope_bytes": {
+          "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+        },
+        "public_qualified": {
+          "const": false
+        }
+      },
+      "required": [
+        "format",
+        "network_id",
+        "poll_id",
+        "window_start_ms",
+        "window_end_ms",
+        "partitions",
+        "attempts",
+        "verified_unique_receipts",
+        "duplicates",
+        "failed_attempts",
+        "receipt_p95_ms",
+        "receipt_p99_ms",
+        "receipt_max_ms",
+        "histogram_cap_ms",
+        "minimum_receipts_per_second",
+        "per_second",
+        "per_lane",
+        "average_envelope_bytes",
+        "maximum_envelope_bytes",
+        "public_qualified"
       ],
       "additionalProperties": false
     }

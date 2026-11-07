@@ -69,6 +69,12 @@ func (s *Scheduled) Height() uint64        { return s.Base.Height() }
 func (s *Scheduled) Time() uint64          { return s.Base.Time() }
 func (s *Scheduled) Active() bool          { return s.Base.Active() }
 func (s *Scheduled) Check(tx []byte) error { return s.Base.Check(tx) }
+func (s *Scheduled) TransactionPriority(raw []byte) int {
+	if p, ok := s.Base.(interface{ TransactionPriority([]byte) int }); ok {
+		return p.TransactionPriority(raw)
+	}
+	return 1
+}
 func (s *Scheduled) Events() []abci.Event {
 	if p, ok := s.Base.(interface{ Events() []abci.Event }); ok {
 		return p.Events()

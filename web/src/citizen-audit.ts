@@ -69,6 +69,7 @@ export interface Frozen {
   archive_keys: string[];
   eligible_count: string;
   audit?: AuditPolicy;
+  recovery?: unknown;
 }
 interface BatchRef {
   id: string;
@@ -111,6 +112,7 @@ interface Summary {
   batch_root: string;
   admission_sealed: boolean;
   processing_sealed: boolean;
+  interrupted?: true;
 }
 interface Checkpoint {
   proof: StateProof;
@@ -158,6 +160,7 @@ export type ObjectLoader = (ref: Ref) => Uint8Array;
 export {
   certificate as verifyArchiveCertificate,
   nativeTransaction as verifyNativeTransaction,
+  checkpoint as verifyPartitionCheckpoint,
 };
 function eq(a: unknown, b: unknown) {
   if (canonical(a) !== canonical(b)) throw Error("archive linkage mismatch");
@@ -256,6 +259,7 @@ function checkpoint(f: Frozen, c: Checkpoint, old?: Verified): Verified {
     i = Number(uint(s.lane_id));
   if (!f.lanes[i]) throw Error("lane index");
   const header = verifyState(f.lanes[i]!, c.proof);
+  if (s.interrupted) throw Error("ERR_SECURITY_INTERRUPTED");
   eq(c.proof.path.entry.table, "lane_checkpoint");
   eq(c.proof.path.entry.key, f.context.poll_id);
   eq(s.height, c.proof.height);
@@ -367,6 +371,7 @@ function frozenID(f: Frozen) {
       f.eligible_count,
     ];
   if (f.audit) values.push(f.audit);
+  if (f.recovery) values.push(f.recovery);
   return domain("scale/open", values);
 }
 export async function auditRecord(

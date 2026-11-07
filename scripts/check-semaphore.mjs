@@ -1,23 +1,25 @@
 import { readFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { semaphoreLock } from "../dist/web/src/semaphore-lock.js";
 const lock = JSON.parse(
   readFileSync("spec/crypto/semaphore-v4.lock.json", "utf8"),
 );
 if (JSON.stringify(lock) !== JSON.stringify(semaphoreLock))
   throw Error("Browser and Go artifact locks differ");
+const require = createRequire(import.meta.url);
+const packageDirectory = (name) =>
+  dirname(dirname(require.resolve("@semaphore-protocol/" + name)));
 for (const name of ["identity", "group", "proof"]) {
   const pkg = JSON.parse(
-    readFileSync(
-      "node_modules/@semaphore-protocol/" + name + "/package.json",
-      "utf8",
-    ),
+    readFileSync(join(packageDirectory(name), "package.json"), "utf8"),
   );
   if (pkg.version !== lock.sdk_version) throw Error("SDK version mismatch");
 }
 const sdk = JSON.parse(
   readFileSync(
-    "node_modules/@semaphore-protocol/proof/src/verification-keys.json",
+    join(packageDirectory("proof"), "src/verification-keys.json"),
     "utf8",
   ),
 );
@@ -37,7 +39,10 @@ for (const entry of lock.depths) {
   if (JSON.stringify(JSON.parse(bytes)) !== JSON.stringify(expected))
     throw Error("Verifier key differs from the pinned SDK");
   for (const name of ["wasm", "zkey"]) {
-    const file = ".tools/semaphore/" + entry[name].file;
+    const file = join(
+      process.env.CIVORA_ARTIFACT_DIR ?? ".tools/semaphore",
+      entry[name].file,
+    );
     if (!existsSync(file)) {
       if (process.argv.includes("--require-artifacts"))
         throw Error("Run npm run artifacts:fetch first");

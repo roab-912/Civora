@@ -1,13 +1,24 @@
-param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork,[switch]$SkipPWA,[switch]$Qualification)
+param([switch]$Browsers,[switch]$Scale,[switch]$SkipNetwork,[switch]$SkipPWA,[switch]$Qualification,[switch]$Distribution,[string]$Report='')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Push-Location -LiteralPath $projectRoot
+$checksPassed=$false
+$checkStarted=(Get-Date).ToUniversalTime().ToString('o')
+$sourceBefore=''
 try {
     $localGo = Join-Path $projectRoot '.tools/go/bin/go.exe'
-    if (Test-Path -LiteralPath $localGo) { $goExe = $localGo } else { $goExe = (Get-Command go -ErrorAction Stop).Source }
+    if ($env:CIVORA_GO) { $goExe=$env:CIVORA_GO }
+    elseif (Test-Path -LiteralPath $localGo) { $goExe = $localGo }
+    else { $goExe = (Get-Command go -ErrorAction Stop).Source }
     $env:GOPATH = Join-Path $projectRoot '.tools/gopath'
     $env:GOMODCACHE = Join-Path $projectRoot '.tools/gomodcache'
     $env:GOCACHE = Join-Path $projectRoot '.tools/gocache'
+    if ($Report) {
+        $sourceBefore=(& node scripts/finalize-release.mjs fingerprint).Trim()
+        if ($LASTEXITCODE -ne 0) { throw 'Could not fingerprint check sources' }
+    }
+    & node --test scripts/distribution.test.mjs
+    if ($LASTEXITCODE -ne 0) { throw 'Source snapshot and release gate tests failed' }
     & npm.cmd run schemas:check
     if ($LASTEXITCODE -ne 0) { throw 'Generated schemas differ' }
     & npm.cmd run format:check
@@ -36,6 +47,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Go tests failed' }
     & $goExe vet ./...
     if ($LASTEXITCODE -ne 0) { throw 'Go vet failed' }
+    & $goExe -C tools/distribution test ./... -count=1 -timeout 90s
+    if ($LASTEXITCODE -ne 0) { throw 'Distribution TUF, replay and abrupt-exit tests failed' }
+    & $goExe -C tools/distribution vet ./...
+    if ($LASTEXITCODE -ne 0) { throw 'Distribution vet failed' }
     $nodeDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnode
     if ($LASTEXITCODE -ne 0) { throw 'Node dependency inspection failed' }
     if ($nodeDependencies -contains 'civora/internal/simulation' -or $nodeDependencies -contains 'civora/internal/recoverytest') { throw 'Test-only adapters linked into civnode' }
@@ -113,6 +128,11 @@ try {
         & node scripts/test-qualification.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Local qualification prerequisites failed' }
     }
+    if ($Distribution) {
+        if ($Report) { & node scripts/test-distribution.mjs --report ($Report+'.distribution.json') }
+        else { & node scripts/test-distribution.mjs }
+        if ($LASTEXITCODE -ne 0) { throw 'Distribution reproducible packages and standalone auditors failed' }
+    }
     if ($Scale) {
         & node scripts/check-eligibility-scale.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Ten-million eligibility verification failed' }
@@ -120,4 +140,17 @@ try {
         & node scripts/test-eligibility-browsers.mjs
         if ($LASTEXITCODE -ne 0) { throw 'Browser proof tests failed' }
     }
-} finally { Pop-Location }
+    $checksPassed=$true
+} finally {
+  try {
+    if ($Report -and $sourceBefore) {
+        $sourceAfter=(& node scripts/finalize-release.mjs fingerprint).Trim()
+        $sourceUnchanged=($LASTEXITCODE -eq 0 -and $sourceAfter -eq $sourceBefore)
+        $record=[ordered]@{v='1';scope='local_regression';passed=($checksPassed -and $sourceUnchanged);source_sha256=$sourceBefore;source_unchanged=$sourceUnchanged;started=$checkStarted;completed=(Get-Date).ToUniversalTime().ToString('o');go=(& $goExe version).Trim();node=(& node --version).Trim();flags=@{skip_network=[bool]$SkipNetwork;skip_pwa=[bool]$SkipPWA;distribution=[bool]$Distribution;qualification=[bool]$Qualification;scale=[bool]$Scale};distribution_report=($Report+'.distribution.json')}
+        $reportPath=[System.IO.Path]::GetFullPath((Join-Path $projectRoot $Report))
+        [System.IO.Directory]::CreateDirectory([System.IO.Path]::GetDirectoryName($reportPath)) | Out-Null
+        [System.IO.File]::WriteAllText($reportPath,($record | ConvertTo-Json -Depth 8),(New-Object System.Text.UTF8Encoding($false)))
+        if ($checksPassed -and -not $sourceUnchanged) { throw 'Sources changed while checks were running' }
+    }
+  } finally { Pop-Location }
+}

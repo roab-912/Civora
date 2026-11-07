@@ -8,9 +8,13 @@ import {
   writeFileSync,
   copyFileSync,
 } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 import { createHash } from "node:crypto";
-const directory = resolve(".tools/pwa/v0.8/public");
+const outIndex = process.argv.indexOf("--out");
+if (outIndex >= 0 && !process.argv[outIndex + 1]) throw Error("Missing --out");
+const directory = resolve(
+  outIndex < 0 ? ".tools/pwa/v0.8/public" : process.argv[outIndex + 1],
+);
 mkdirSync(directory, { recursive: true });
 const ajv = new Ajv2020({
     strict: true,
@@ -27,6 +31,7 @@ for (const f of readdirSync("spec/schemas").filter((f) =>
     exports["v_" + f.replace(".schema.json", "")] = s.$id;
 }
 const generated = resolve(".tools/pwa/validators.mjs");
+mkdirSync(dirname(generated), { recursive: true });
 writeFileSync(generated, standalone(ajv, exports));
 const result = await build({
   entryPoints: {

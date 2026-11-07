@@ -1,4 +1,12 @@
-# Civora — outillage de qualification v0.9, PWA v0.8
+# Civora — distribution expérimentale 1.0.0, PWA v0.8
+
+Édition expérimentale 1.0.0 : archives Windows/Linux, formats, profils, outils d’audit autonomes, inventaire et provenance SLSA, vérification TUF avec état anti-retour persistant. **Le pilote public reste bloqué par v0.9 ; aucune capacité à dix millions n’est revendiquée.** Le [manuel de distribution](spec/manual/README.md) donne les commandes ; la [décision 0017](spec/decisions/0017-distribution-v1.0.md) fixe les choix d’interopérabilité. La [décision 0018](spec/decisions/0018-finalisation-experimentale-v1.0.md) décrit la reconstruction sans Git et la finalisation liée aux tests.
+
+```sh
+./scripts/check.ps1 -Distribution -Report .tools/v1.0-checks.json
+npm run release:build -- --epoch 2026-11-07T12:00:00Z --out .tools/releases/v1.0
+npm run release:finalize -- --release .tools/releases/v1.0 --checks .tools/v1.0-checks.json --output spec/reports/v1.0-distribution.json --allow-test-keys
+```
 
 Implémentation de développement des jalons v0.1 à v0.8 de la [spécification](spec/Protocole-Civique-v1.md). Le noyau Go gère comptes, gouvernance, éligibilité Semaphore et vote chiffré ElectionGuard 2.0. CometBFT **0.38.26** réplique le registre et les partitions. Go et TypeScript vérifient les preuves cryptographiques et les en-têtes natifs à quorum de **cinq validateurs sur sept**.
 

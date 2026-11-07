@@ -1,0 +1,145 @@
+{
+  "milestone": "v1.0",
+  "release_version": "1.0.0",
+  "date": "2026-11-07",
+  "status": "experimental_release_finalized_public_pilot_blocked",
+  "experimental_release_complete": true,
+  "local_preparation_complete": true,
+  "milestone_complete": false,
+  "public_qualified": false,
+  "qualified_to_ten_million_ballots": false,
+  "verified_capacity_ballots": null,
+  "guide": "spec/manual/README.md",
+  "decision": "spec/decisions/0018-finalisation-experimentale-v1.0.md",
+  "qualification": "spec/reports/v0.9-qualification.json",
+  "distribution": {
+    "directory": "D:/Documents/Code/GitHub/Civora/.tools/releases/v1.0",
+    "manifest": {
+      "path": "payload/release.json",
+      "sha256": "20112bb5a77f25a97295156a7dba461733024a1415cb921b36fb711e4c5eab07",
+      "size": "1413"
+    },
+    "files": [
+      {
+        "path": "civora-1.0.0-linux-amd64.zip",
+        "sha256": "3d0aed2fa575f80179a4534cfa68429ca1611a8dc3ff9f83a5d5672e7ed29530",
+        "size": "94796977"
+      },
+      {
+        "path": "civora-1.0.0-source.zip",
+        "sha256": "98e5bb15bd900e1a2ef100f7f14db6321e7b4ff66e5c69e2012a4512472f4cf3",
+        "size": "3895640"
+      },
+      {
+        "path": "civora-1.0.0-windows-amd64.zip",
+        "sha256": "ccb58026d77407be0bedfad6e6f58420b77a4333128f62fe3d6bea2006283b35",
+        "size": "95972096"
+      },
+      {
+        "path": "dependencies.json",
+        "sha256": "5ccdab133b9548343f5ec80ebc82cd917dd217810d0825d1660ec06ee340e2e4",
+        "size": "86507"
+      },
+      {
+        "path": "formats.json",
+        "sha256": "2ba459044d5bd69561e9a62ceafda7020fbda3cd8ce0921bcc6e1611c80a1637",
+        "size": "21069"
+      },
+      {
+        "path": "provenance.intoto.json",
+        "sha256": "b12ffee43512051207d15569ae86acfe457f8e0ea824b9aa3b782853bd987008",
+        "size": "2347"
+      },
+      {
+        "path": "qualification.json",
+        "sha256": "1e41a1dfb4556a9d7b1590aab1e965f16b5670a576dfaa6fa75d8406ae87c671",
+        "size": "6074"
+      }
+    ],
+    "keys": "PUBLIC_TEST_ONLY; no production signing keys generated",
+    "root_sha256": "f2e8b382763c08ef741106cc9cf3d8b19739460aad2f6fda56b54b7de7045149",
+    "protocol_activation": false,
+    "pwa_version": "0.8.0",
+    "source_sha256": "31f854675651121e2220cc5f54d40857e4e134af5b6dadccbfc1f503ebc35962",
+    "source_boundary": "Generated verification reports are excluded from the test fingerprint. The archived source inventory records every exact source byte used by the builders."
+  },
+  "verification": {
+    "full_regression_gate": {
+      "v": "1",
+      "scope": "local_regression",
+      "passed": true,
+      "source_sha256": "31f854675651121e2220cc5f54d40857e4e134af5b6dadccbfc1f503ebc35962",
+      "source_unchanged": true,
+      "started": "2026-11-07T07:44:43.7372824Z",
+      "completed": "2026-11-07T07:59:59.1410416Z",
+      "go": "go version go1.27.3 windows/amd64",
+      "node": "v24.12.0",
+      "flags": {
+        "distribution": true,
+        "skip_network": false,
+        "skip_pwa": false,
+        "qualification": false,
+        "scale": false
+      },
+      "distribution_report": ".tools/v1.0-final-checks.json.distribution.json"
+    },
+    "standalone_distribution": {
+      "milestone": "v1.0",
+      "status": "local_experimental_distribution_tested",
+      "public_qualified": false,
+      "independent_build_environments": false,
+      "passed": true,
+      "source_sha256": "31f854675651121e2220cc5f54d40857e4e134af5b6dadccbfc1f503ebc35962",
+      "native_package_sha256": "ccb58026d77407be0bedfad6e6f58420b77a4333128f62fe3d6bea2006283b35",
+      "epoch": "2026-11-07T07:57:42Z",
+      "checks": [
+        "strict manifest, unknown fields, numeric sizes, duplicate files and false capacity",
+        "format catalogue preserves all schema IDs and bytes",
+        "source allowlist excludes untracked secrets and operational files",
+        "public publication blocked before writing output",
+        "Go TUF adversarial, rotation, replay and abrupt process exit tests",
+        "Git-free source snapshot rebuild matches the original native package",
+        "CLI local sealing, default refusal, authenticated manifest and every target",
+        "bundled independent citizen audit runs without source tree or npm dependencies",
+        "bundled encrypted audit runs without source tree or npm dependencies",
+        "package contains no runtime TLS, VAPID or account stores",
+        "bundled PWA host serves browser assets and pinned proof material without source checkout"
+      ],
+      "output": "D:\\Documents\\Code\\GitHub\\Civora\\.tools\\distribution-tests\\cb2c3441-b40d-4f9c-8ccf-09b9dd22b5a9"
+    },
+    "tuf_mirror": {
+      "passed": true,
+      "targets": 8,
+      "report": "D:/Documents/Code/GitHub/Civora/.tools/releases/v1.0/verification.json"
+    },
+    "native_package_identical_to_executed_package": true,
+    "reproducibility": {
+      "passed": true,
+      "scope": "Git checkout versus a verified source snapshot with Git unavailable, on one local environment",
+      "independent_build_environments": false
+    },
+    "platforms": {
+      "linux-amd64": "Cross-compiled; runtime qualification pending",
+      "windows-amd64": "Built and executed: replay, independent audits, TUF and PWA host passed"
+    },
+    "provenance": {
+      "predicate_type": "https://slsa.dev/provenance/v1",
+      "assurance": "local_self_attestation",
+      "slsa_level_claimed": null
+    }
+  },
+  "public_blockers": [
+    "Real v0.9 qualification and replayable 10-million-ballot, 32-partition/WAN/saturation/physical-device evidence",
+    "Independent cryptographic and application audits and correction of critical/high findings",
+    "Complete constitutional recovery and incident qualification",
+    "Two independent build environments and two independent publication reviews",
+    "Genuine offline distribution keys, independent root bootstrap and mirrors; operational ceremony and compromise/recovery exercise"
+  ],
+  "limitations": [
+    "Experimental finalization is not completion of the public-pilot milestone",
+    "Development signing keys are public; their signatures provide no operator authenticity",
+    "No public deployment or protocol activation occurred",
+    "Local report receipts are not independent audit attestations",
+    "The persistent verifier state must be retained; abrupt-exit tests do not prove electrical power-loss or host-backup rollback resistance"
+  ]
+}

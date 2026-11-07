@@ -53,7 +53,7 @@ const notifications = new NotificationService({
     ? { contact: config.notifications.contact }
     : {}),
 });
-const directory = resolve(".tools/pwa/v0.8/public"),
+const directory = resolve(get("--public-dir", ".tools/pwa/v0.8/public")),
   mime = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -202,7 +202,11 @@ const server = createServer(async (req, res) => {
       const path =
         artifact[2] === "verification-key.json"
           ? `spec/crypto/semaphore-${artifact[1]}.verification-key.json`
-          : `.tools/semaphore/${artifact[1]}/${artifact[2]}`;
+          : join(
+              get("--artifact-dir", ".tools/semaphore"),
+              artifact[1],
+              artifact[2],
+            );
       res.setHeader(
         "Content-Type",
         artifact[2].endsWith(".wasm")

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "release": "1.0.0",
+  "status": "experimental",
+  "public_qualified": false,
+  "verified_capacity_ballots": null,
+  "profiles": [
+    {"id": "inline_dev", "availability": "development_TEST_ONLY", "reference": "spec/profiles/development.lock.json"},
+    {"id": "transport_dev_v0_6", "availability": "development_TEST_ONLY", "reference": "spec/fixtures/v0.6/network.json"},
+    {"id": "scale_1", "availability": "qualification_pending", "reference": "spec/Protocole-Civique-v1.md#14-performances-et-capacité"}
+  ],
+  "self_enrollment": "pilot_only",
+  "network_defaults_changed": false,
+  "protocol_activation": false
+}

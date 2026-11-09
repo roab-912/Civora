@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/v0.1/pwa_result_report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["network_id", "poll_id", "yes", "no", "as_of_height"],
+  "properties": {
+    "format": {
+      "const": "civora-result-report-1"
+    },
+    "genesis_sha256": {
+      "$ref": "#/$defs/id"
+    },
+    "network_id": {
+      "$ref": "#/$defs/id"
+    },
+    "poll_id": {
+      "$ref": "#/$defs/id"
+    },
+    "yes": {
+      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+    },
+    "no": {
+      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+    },
+    "as_of_height": {
+      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+    },
+    "dossier_id": {
+      "$ref": "#/$defs/id"
+    },
+    "admitted": {
+      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+    },
+    "counted": {
+      "$ref": "https://civora.invalid/v0.1/protocol#/$defs/uint"
+    },
+    "state": {
+      "enum": ["provisional", "certified", "contested", "failed_certification"]
+    },
+    "verifier": {
+      "const": "civic-typescript-v0.6"
+    },
+    "verified": {
+      "const": true
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "verifier": false,
+        "admitted": false,
+        "counted": false,
+        "dossier_id": false,
+        "state": false,
+        "verified": false
+      }
+    },
+    {
+      "properties": {
+        "verifier": {},
+        "admitted": {},
+        "counted": {},
+        "dossier_id": {},
+        "state": {},
+        "verified": {}
+      },
+      "required": [
+        "dossier_id",
+        "admitted",
+        "counted",
+        "state",
+        "verifier",
+        "verified"
+      ]
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

@@ -53,7 +53,7 @@ const report = {
   screenshots: [],
 };
 const browsers = [];
-let backup, code, accountID, savedReceipt;
+let backup, code, accountID, savedReceipt, savedResultReport;
 let anonymousPosts = 0;
 function observe(page) {
   page.on("request", (r) => {
@@ -87,7 +87,9 @@ async function capture(page, name) {
   );
 }
 async function navigate(page, path) {
-  await page.goto(origin + "/#" + path);
+  const url = origin + "/#" + path;
+  if (page.url() === url) await page.reload();
+  else await page.goto(url);
   await expect(page.locator("#connection")).toHaveAttribute(
     "data-state",
     "verified",
@@ -177,6 +179,13 @@ async function decide(page, id, { vote = true, voter = page } = {}) {
   await expect(
     page.getByRole("heading", { name: "Le résultat est vérifié." }),
   ).toBeVisible({ timeout: 60000 });
+  if (!savedResultReport) {
+    const downloaded = page.waitForEvent("download");
+    await page
+      .getByRole("button", { name: "Télécharger le rapport de résultat" })
+      .click();
+    savedResultReport = readFileSync(await (await downloaded).path(), "utf8");
+  }
   await page.getByRole("link", { name: "Retour au dossier" }).click();
   await advance("Atelier : appliquer la décision");
   await expect(page.locator(".meta-line")).toContainText(
@@ -344,6 +353,45 @@ try {
   await expect(page.locator("#app h1")).toContainText("inclusion vérifiée");
   report.checks.push(
     "downloaded-receipt-import-compared-to-native-proof-without-submission",
+  );
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Retransmettre le même bulletin" })
+      .count(),
+    0,
+  );
+  let verificationPosts = 0;
+  const countVerificationPosts = (request) => {
+    if (request.method() === "POST") verificationPosts++;
+  };
+  page.on("request", countVerificationPosts);
+  await navigate(page, "/network/receipt");
+  await page.getByLabel("Fichier du reçu").setInputFiles({
+    name: "civora-verification.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(savedResultReport),
+  });
+  await page.getByRole("button", { name: "Vérifier ce reçu" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Le résultat est vérifié." }),
+  ).toBeVisible({ timeout: 60000 });
+  await expect(page.locator("#app")).toContainText("Rapport importé comparé");
+  const altered = JSON.parse(savedResultReport);
+  altered.yes = String(BigInt(altered.yes) + 1n);
+  await navigate(page, "/network/receipt");
+  await page.getByLabel("Fichier du reçu").setInputFiles({
+    name: "altered-result.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(altered)),
+  });
+  await page.getByRole("button", { name: "Vérifier ce reçu" }).click();
+  await expect(page.locator("#notice")).toContainText("ne correspond pas", {
+    timeout: 60000,
+  });
+  assert.equal(verificationPosts, 0);
+  page.off("request", countVerificationPosts);
+  report.checks.push(
+    "historical-result-report-reimport-rechecks-cryptographic-proofs-refuses-edited-totals-and-never-submits",
   );
   const settings = await (await fetch(origin + "/pwa-config.json")).json(),
     choice = settings.networks[0],

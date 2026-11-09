@@ -47,6 +47,11 @@ import { checkProof, trustAt } from "./network.js";
 import { verifyHeader } from "../consensus.js";
 import { blob, uint } from "./protocol.js";
 import {
+  receiptDocumentType,
+  inspectResultReport,
+  compareResultReport,
+} from "./receipts.js";
+import {
   inspectExplorerBlock,
   explorerHeight,
   type ExplorerBlock,
@@ -157,6 +162,19 @@ function flash(text: string, error = false) {
 }
 function errorMessage(e: unknown) {
   const message = e instanceof Error ? e.message : "ERR_UNAVAILABLE";
+  if (message.includes("ERR_RESULT_REPORT_MISMATCH"))
+    return "Le contenu du rapport ne correspond pas au résultat recalculé à partir des preuves du registre. Rapport refusé.";
+  if (message.includes("ERR_RESULT_REPORT_CHANGED"))
+    return "L’état du dossier a évolué depuis ce rapport. Ouvrez le scrutin et vérifiez son résultat pour obtenir un rapport actualisé.";
+  if (message.includes("ERR_RECEIPT_STATE_PROOF"))
+    return "Ce fichier est une preuve d’état, pas un reçu de vote ni un rapport de résultat. Consultez les états du registre dans l’explorateur.";
+  if (message.includes("ERR_RECEIPT_BACKUP"))
+    return "Ce fichier est une sauvegarde de compte. Importez-le dans Mon compte avec son code de secours.";
+  if (
+    message.includes("ERR_RECEIPT_FORMAT") ||
+    message.includes("ERR_RESULT_REPORT_FORMAT")
+  )
+    return "Ce fichier n’est pas un reçu de bulletin ou un rapport de résultat pris en charge. Utilisez civora-recu.json ou civora-verification.json.";
   if (message.includes("ERR_EXPLORER_HEIGHT"))
     return "Indiquez une hauteur entière positive disponible dans ce registre.";
   if (message.includes("ERR_EXPLORER_KEY"))
@@ -1472,7 +1490,7 @@ async function transmit(id: string, value: PendingVote) {
     value.raw,
   );
 }
-async function receiptPage(id: string, value: PendingVote) {
+async function receiptPage(id: string, value: PendingVote, readOnly = false) {
   const viewGeneration = generation;
 
   let status = "En cours de transmission",
@@ -1482,7 +1500,10 @@ async function receiptPage(id: string, value: PendingVote) {
     if (value.kind === "inline") {
       result = await client.confirmation(value.tx_id!);
       verified = !!result.verified;
-      if (verified) status = "Compté · inclusion vérifiée";
+      if (verified)
+        status = readOnly
+          ? "Bulletin inclus · inclusion vérifiée"
+          : "Compté · inclusion vérifiée";
     } else {
       result = await client.get(
         "/v1/lanes/" + value.lane_id + "/receipts/" + value.digest,
@@ -1587,7 +1608,9 @@ async function receiptPage(id: string, value: PendingVote) {
     header(
       "Votre bulletin",
       status,
-      "Le même bulletin chiffré est conservé sur cet appareil. Une retransmission réutilise exactement les mêmes octets.",
+      readOnly
+        ? "Les octets du bulletin et sa preuve d’inclusion sont contrôlés sur cet appareil. Aucune transaction n’est envoyée."
+        : "Le même bulletin chiffré est conservé sur cet appareil. Une retransmission réutilise exactement les mêmes octets.",
     ),
     el(
       "section",
@@ -1605,17 +1628,19 @@ async function receiptPage(id: string, value: PendingVote) {
         { class: "actions" },
         button(
           "Actualiser le reçu",
-          async () => receiptPage(id, value),
+          async () => receiptPage(id, value, readOnly),
           "secondary",
         ),
-        button(
-          "Retransmettre le même bulletin",
-          async () => {
-            await transmit(id, value);
-            await receiptPage(id, value);
-          },
-          "secondary",
-        ),
+        !readOnly
+          ? button(
+              "Retransmettre le même bulletin",
+              async () => {
+                await transmit(id, value);
+                await receiptPage(id, value);
+              },
+              "secondary",
+            )
+          : null,
         button(
           "Télécharger mon reçu",
           async () =>
@@ -1633,7 +1658,7 @@ async function receiptPage(id: string, value: PendingVote) {
     cachedNote(),
   );
 }
-async function verifyResult(id: string) {
+async function verifyResult(id: string, imported?: Row) {
   const viewGeneration = generation;
 
   flash("Vérification indépendante du résultat en cours…");
@@ -1684,18 +1709,34 @@ async function verifyResult(id: string) {
       genesis: client.choice.manifest.main.genesis.sha256,
     });
   } else {
-    const context = await client.context(id),
-      t = await client.get("/v1/polls/" + id + "/tally", false),
+    let context = await client.context(id);
+    if (imported) {
+      const height = explorerHeight(imported.as_of_height, client.height);
+      const poll = await client.proof("polls", id, height);
+      const proposalID = (poll.path.entry.value as Row | null)?.proposal_id;
+      if (!poll.path.exists || typeof proposalID !== "string")
+        throw Error("ERR_RESULT_REPORT_MISMATCH");
+      context = {
+        ...context,
+        poll,
+        proposal: await client.proof("proposals", proposalID, height),
+        configuration: await client.proof("network", "config", height),
+      };
+    }
+    const t = await client.get("/v1/polls/" + id + "/tally", false),
       raw = verifyTransaction(
         client.genesis!,
         t.publication,
         t.publication.tx_id,
       ),
       tx = parse(raw) as Row;
+    validate("transaction", tx);
     if (
       tx.body.type !== "poll.tally" ||
+      tx.body.network_id !== client.network ||
       tx.body.payload.poll_id !== id ||
-      tx.body.payload.decryption_record !== t.decryption_record
+      tx.body.payload.decryption_record !== t.decryption_record ||
+      (imported && uint(t.publication.height) > uint(imported.as_of_height))
     )
       throw Error("ERR_RESULT_CONTEXT");
     report = {
@@ -1703,9 +1744,23 @@ async function verifyResult(id: string) {
       as_of_height: context.poll!.height,
     };
   }
+  if (
+    (report.network_id && report.network_id !== client.network) ||
+    (report.poll_id && report.poll_id !== id)
+  )
+    throw Error("ERR_RESULT_CONTEXT");
+  report = { ...report, network_id: client.network, poll_id: id };
+  if (imported) compareResultReport(imported, report);
   flash("Preuve du total vérifiée sur cet appareil.");
   renderPage(
     viewGeneration,
+    imported
+      ? el(
+          "p",
+          { class: "verified" },
+          "✓ Rapport importé comparé aux preuves vérifiées du registre",
+        )
+      : null,
     header(
       "Vérification indépendante",
       "Le résultat est vérifié.",
@@ -1714,6 +1769,14 @@ async function verifyResult(id: string) {
     el(
       "section",
       { class: "card result" },
+      el(
+        "dl",
+        { class: "facts" },
+        el("dt", {}, "Réseau"),
+        el("dd", {}, client.choice.name),
+        el("dt", {}, "Scrutin vérifié"),
+        el("dd", { class: "identifier" }, id),
+      ),
       el(
         "div",
         { class: "stats" },
@@ -1728,9 +1791,11 @@ async function verifyResult(id: string) {
           ". Cette preuve historique ne garantit pas l’absence d’une contestation ultérieure.",
       ),
       button(
-        "Télécharger le rapport",
+        "Télécharger le rapport de résultat",
         async () =>
           download("civora-verification.json", {
+            format: "civora-result-report-1",
+            genesis_sha256: client.choice.manifest.main.genesis.sha256,
             network_id: client.network,
             poll_id: id,
             ...report,
@@ -1738,6 +1803,16 @@ async function verifyResult(id: string) {
         "secondary",
       ),
     ),
+    imported
+      ? button(
+          "Vérifier un autre document",
+          async () => {
+            notice.hidden = true;
+            await verification();
+          },
+          "secondary",
+        )
+      : null,
     link("Retour au dossier", "/polls/" + id),
   );
 }
@@ -1966,12 +2041,12 @@ async function verification() {
     form = el(
       "form",
       { class: "card form" },
-      el("h2", {}, "Vérifier un reçu téléchargé"),
+      el("h2", {}, "Importer un reçu ou un rapport"),
       el("label", { for: "receipt-file" }, "Fichier du reçu", file),
       el(
         "p",
         {},
-        "Le reçu sera comparé aux preuves du réseau actuel. Aucun bulletin ne sera envoyé.",
+        "Documents acceptés : civora-recu.json pour un bulletin individuel ; civora-verification.json pour le résultat global. Le rapport de résultat est un résumé : ses totaux sont revérifiés à partir des preuves du réseau actuel, à la hauteur indiquée. Une connexion au registre est nécessaire pour cette vérification.",
       ),
       el("button", { type: "submit", class: "secondary" }, "Vérifier ce reçu"),
     );
@@ -1981,7 +2056,21 @@ async function verification() {
       const selected = file.files?.[0];
       if (!selected || selected.size > 8 * 1024 * 1024)
         throw Error("ERR_CAPACITY");
-      const imported = parse(Buffer.from(await selected.text())) as Row;
+      let imported: Row;
+      try {
+        imported = parse(Buffer.from(await selected.text())) as Row;
+      } catch {
+        throw Error("ERR_RECEIPT_FORMAT");
+      }
+      if (receiptDocumentType(imported) === "result") {
+        const report = inspectResultReport(
+          imported,
+          client.network,
+          client.choice.manifest.main.genesis.sha256,
+        );
+        await verifyResult(report.poll_id, report);
+        return;
+      }
       const v = imported.ballot as PendingVote;
       if (
         !v ||
@@ -2015,17 +2104,37 @@ async function verification() {
         )
           throw Error("ERR_PROOF_CONTEXT");
       } else throw Error("ERR_RECEIPT");
-      await receiptPage(v.poll_id, v);
+      await receiptPage(v.poll_id, v, true);
     });
   };
   renderPage(
     viewGeneration,
     header(
       "Votre vote",
-      "Vérifier un reçu de vote.",
-      "Importez le reçu téléchargé après votre vote pour contrôler son inclusion dans le registre. La vérification s’effectue sur cet appareil.",
+      "Vérifier un reçu ou un résultat.",
+      "Contrôlez l’inclusion d’un bulletin individuel ou le résultat global d’un scrutin. Le type de document est reconnu automatiquement ; aucune transaction n’est envoyée.",
     ),
     form,
+    el(
+      "section",
+      { class: "card" },
+      el("h2", {}, "Ce que chaque document permet de vérifier"),
+      el(
+        "p",
+        {},
+        "Reçu de bulletin : intégrité des octets chiffrés, réseau et scrutin concernés, preuve d’inclusion signée. Pour un bulletin partitionné, le dépôt, son délai et le statut de comptage publié sont contrôlés lorsqu’ils sont disponibles.",
+      ),
+      el(
+        "p",
+        {},
+        "Rapport de résultat : contexte du scrutin, publication authentifiée du dépouillement, total Oui/Non et preuves de déchiffrement. Les chiffres du fichier doivent correspondre au résultat recalculé à la hauteur du rapport.",
+      ),
+      el(
+        "p",
+        { class: "source-note" },
+        "Un reçu individuel ne révèle pas votre choix en clair et ne certifie pas à lui seul tout le résultat. Les fichiers doivent appartenir au même réseau ; un nouvel atelier possède un autre identifiant. La preuve historique d’un résultat ne garantit pas l’absence d’une contestation ultérieure.",
+      ),
+    ),
     el(
       "p",
       { class: "source-note" },

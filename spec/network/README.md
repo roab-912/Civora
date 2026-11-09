@@ -36,7 +36,11 @@ La page de l’observateur utilise `#/network/observer`. Les anciens liens `#/ne
 
 **Explorateur → États du registre** consulte la configuration du réseau ou une clé publique de compte, proposition, scrutin, loi ou rôle, à la hauteur choisie. Le résultat vérifie la preuve de présence ou d’absence et peut être téléchargé. L’état après le bloc H est authentifié par l’en-tête signé du bloc H+1 ; la racine `app_hash` d’un en-tête de bloc décrit donc l’état avant ce bloc. Les coffres, sauvegardes et choix de vote locaux ne sont pas consultés.
 
-**Vérifier un reçu** est réservé à l’import et au contrôle d’un reçu de vote. Son adresse est `#/network/receipt` ; les anciennes adresses `#/network/verify` et `#/verify` restent des alias de ce contrôle.
+**Vérifier un reçu** accepte deux documents : `civora-recu.json`, le reçu d’un bulletin chiffré individuel, et `civora-verification.json`, le rapport du résultat global. Le type est reconnu automatiquement. Le reçu individuel contrôle l’intégrité des octets et l’inclusion signée ; le rapport de résultat refait la vérification des totaux et des preuves de déchiffrement à partir du registre. Un champ `verified` dans un fichier n’est jamais une autorité. Les rapports sont des résumés, pas des dossiers de preuve autonomes : une connexion au même registre et l’accès aux preuves historiques sont nécessaires. Le profil courant permet la vérification à la hauteur historique du rapport ; pour un ancien dossier partitionné dont le statut a évolué, un rapport actualisé peut être nécessaire.
+
+La page de vérification n’envoie aucune transaction et ne propose pas de retransmettre le bulletin importé. Un reçu individuel ne révèle pas le choix en clair et ne valide pas à lui seul tout le dépouillement. Une preuve d’état téléchargée dans l’explorateur ou une sauvegarde de compte ne sont pas des reçus de vote ; ces fichiers sont identifiés avec un message adapté. Les fichiers d’un autre atelier sont refusés, car les réseaux sont distincts.
+
+L’adresse est `#/network/receipt` ; les anciennes adresses `#/network/verify` et `#/verify` restent des alias de ce contrôle.
 
 ## Comprendre les compteurs
 

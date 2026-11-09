@@ -64,9 +64,13 @@ try {
       }),
       page = await context.newPage();
     await page.goto(origin.origin);
-    await expect(page.locator("#connection")).toContainText("Source vérifiée", {
-      timeout: 25000,
-    });
+    await expect(page.locator("#connection")).toHaveAttribute(
+      "data-state",
+      "verified",
+      {
+        timeout: 25000,
+      },
+    );
     assert(await page.evaluate(() => isSecureContext && !!crypto.subtle));
     await page.getByRole("link", { name: "Mon compte", exact: false }).click();
     await page

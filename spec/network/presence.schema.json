@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/network/presence-1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["body", "signature"],
+  "properties": {
+    "signature": { "type": "string", "pattern": "^[0-9a-f]{128}$" },
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "network_id",
+        "node_id",
+        "height",
+        "block_sha256",
+        "challenge",
+        "action"
+      ],
+      "properties": {
+        "format": { "const": "civora-presence-1" },
+        "network_id": { "$ref": "#/$defs/hash" },
+        "node_id": { "$ref": "#/$defs/hash" },
+        "block_sha256": { "$ref": "#/$defs/hash" },
+        "challenge": { "$ref": "#/$defs/hash" },
+        "height": { "type": "string", "pattern": "^[1-9][0-9]{0,19}$" },
+        "action": { "enum": ["online", "offline"] }
+      }
+    }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

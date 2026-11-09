@@ -13,6 +13,7 @@ import (
 	"civora/internal/governance"
 	"civora/internal/network"
 	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
@@ -29,6 +30,23 @@ import (
 
 type provider struct{ blocks atomic.Value }
 
+// Fresh workshops are separate TEST_ONLY networks, never rewinds of a network
+// a browser has already verified. An explicit nonce makes tests reproducible.
+func developmentNetworkID(session string) (string, error) {
+	if session == "" {
+		var nonce [16]byte
+		if _, err := rand.Read(nonce[:]); err != nil {
+			return "", err
+		}
+		session = hex.EncodeToString(nonce[:])
+	}
+	nonce, err := hex.DecodeString(session)
+	if err != nil || len(nonce) != 16 || hex.EncodeToString(nonce) != session {
+		return "", fmt.Errorf("session-id must be 16 bytes of lowercase hexadecimal TEST_ONLY session material")
+	}
+	return codec.Hash("development/pwa/session", []any{"PUBLIC_TEST_ONLY", session}), nil
+}
+
 func (p *provider) Height() uint64 { return uint64(len(p.blocks.Load().([]chain.Bundle))) }
 func (p *provider) Bundle(h uint64) (chain.Bundle, error) {
 	blocks := p.blocks.Load().([]chain.Bundle)
@@ -40,7 +58,12 @@ func (p *provider) Bundle(h uint64) (chain.Bundle, error) {
 func run() error {
 	address := flag.String("listen", "127.0.0.1:0", "loopback TEST_ONLY API")
 	directory := flag.String("home", "", "new development session")
+	session := flag.String("session-id", "", "TEST_ONLY session nonce (16 lowercase hexadecimal bytes; random by default)")
 	flag.Parse()
+	networkID, e := developmentNetworkID(*session)
+	if e != nil {
+		return e
+	}
 	if *directory == "" {
 		return fmt.Errorf("explicit new --home required")
 	}
@@ -60,7 +83,7 @@ func run() error {
 		return e
 	}
 	cfg := source.Cases[0].Genesis
-	cfg.NetworkID = codec.Hash("development/pwa", "PUBLIC_TEST_ONLY_V0_7")
+	cfg.NetworkID = networkID
 	cfg.ChainID, _ = codec.ChainID(cfg.NetworkID)
 	cfg.Activations = cfg.Activations[:0]
 	raw, e = os.ReadFile("spec/fixtures/v0.4/actors.TEST_ONLY.json")

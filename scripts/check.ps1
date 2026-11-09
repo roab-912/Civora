@@ -25,6 +25,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'TypeScript formatting differs' }
     & npm.cmd test
     if ($LASTEXITCODE -ne 0) { throw 'TypeScript tests failed' }
+    & node --test scripts/network-service.test.mjs
+    if ($LASTEXITCODE -ne 0) { throw 'Network participant presence tests failed' }
     & node scripts/generate-pwa-fixtures.mjs --check
     if ($LASTEXITCODE -ne 0) { throw 'Browser encryption fixtures differ' }
     & node scripts/build-pwa.mjs
@@ -54,6 +56,8 @@ try {
     $nodeDependencies = & $goExe list -buildvcs=false -deps ./cmd/civnode
     if ($LASTEXITCODE -ne 0) { throw 'Node dependency inspection failed' }
     if ($nodeDependencies -contains 'civora/internal/simulation' -or $nodeDependencies -contains 'civora/internal/recoverytest') { throw 'Test-only adapters linked into civnode' }
+    $participantDependencies = & $goExe list -buildvcs=false -deps ./cmd/civparticipant
+    if ($LASTEXITCODE -ne 0 -or $participantDependencies -contains 'civora/internal/citizendev' -or $participantDependencies -contains 'civora/internal/simulation' -or $participantDependencies -contains 'civora/internal/recoverytest') { throw 'Test-only authorities linked into participant binary' }
     & $goExe test -tags civora_sim ./... -count=1 -timeout 300s
     if ($LASTEXITCODE -ne 0) { throw 'Governance simulation tests failed' }
     & $goExe vet -tags civora_sim ./...
@@ -81,6 +85,10 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Native citizen host acceptance failed' }
     }
     if (-not $SkipPWA) {
+        & node scripts/test-network.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'Network download, native observer and browser menu acceptance failed' }
+        & node scripts/test-pwa-sessions.mjs
+        if ($LASTEXITCODE -ne 0) { throw 'PWA workshop session isolation and rollback protection failed' }
         & node scripts/test-pwa.mjs
         if ($LASTEXITCODE -ne 0) { throw 'PWA desktop/mobile acceptance failed' }
         & node scripts/test-notifications-browser.mjs

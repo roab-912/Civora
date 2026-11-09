@@ -1,2 +1,32 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#173c32"><meta name="description" content="Consulter, proposer et voter sur un registre civique vérifiable."><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="stylesheet" href="/app.css"><title>Civora · Votre espace civique</title><script type="module" src="/app.js"></script></head><body><a class="skip" href="#app">Aller au contenu</a><header class="masthead"><a class="brand" href="#/" aria-label="Civora, accueil"><img src="/icon.svg" alt="" width="38" height="38"><span>CIVORA<small>Le commun, en pratique.</small></span></a><div class="network-control"><label for="network">Votre réseau</label><select id="network" aria-label="Choisir le réseau"></select></div><a class="account-link" href="#/account">Mon compte ↗</a></header><div class="statusbar"><span id="connection" role="status">Connexion au registre…</span><button id="refresh" type="button">Actualiser ↻</button><span>Développement · v0.8</span></div><nav aria-label="Navigation principale"><a href="#/">Accueil</a><a href="#/proposals">Propositions</a><a href="#/news">Actualités</a><a href="#/laws">Lois</a><a href="#/roles">Rôles</a><a href="#/verify">Vérifier</a><a class="mobile-account" href="#/account">Compte</a></nav><div id="notice" class="notice" role="status" aria-live="polite" hidden></div><main id="app" tabindex="-1"><h1>Votre espace civique se prépare…</h1></main><footer><strong>CIVORA</strong><span>Un registre public. Un choix secret.</span><span>Expérimentation · aucun effet juridique externe.</span></footer><noscript>JavaScript est nécessaire pour chiffrer et vérifier les opérations sur cet appareil.</noscript></body></html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173c32">
+  <meta name="description" content="Consulter, proposer et voter sur un registre civique vérifiable.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+  <title>Civora · Votre espace civique</title>
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#app">Aller au contenu</a>
+  <header class="masthead">
+    <a class="brand" href="#/" aria-label="Civora, accueil"><img src="/icon.svg" alt="" width="38" height="38"><span>CIVORA<small>Le commun, en pratique.</small></span></a>
+    <nav class="space-switch" aria-label="Choisir un espace">
+      <a href="#/" data-space="application" aria-current="page">Application</a>
+      <a href="#/network" data-space="network">Réseau</a>
+    </nav>
+    <a class="account-link" href="#/account">Mon compte ↗</a>
+  </header>
+  <div class="statusbar"><span id="connection" role="status">Connexion…</span><button id="refresh" type="button">Actualiser ↻</button><span id="release-version">Expérimental · v__CIVORA_RELEASE_VERSION__</span></div>
+  <nav id="application-nav" aria-label="Navigation de l’application"><a href="#/">Accueil</a><a href="#/proposals">Propositions</a><a href="#/news">Actualités</a><a href="#/laws">Lois</a><a href="#/roles">Rôles</a><a class="mobile-account" href="#/account">Compte</a></nav>
+  <nav id="network-nav" aria-label="Navigation du réseau" hidden><a href="#/network">Vue d’ensemble</a><a href="#/network/explorer">Explorateur</a><a href="#/network/observer">Vérifier le réseau</a><a href="#/network/consensus">Participer au consensus</a><a href="#/network/receipt">Vérifier un reçu</a><a id="workshop-link" href="#/network/workshop" hidden>Atelier</a></nav>
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+  <main id="app" tabindex="-1"><h1>Votre espace civique se prépare…</h1></main>
+  <footer><strong>CIVORA</strong><span>Un registre public. Un choix secret.</span><span>Expérimentation · aucun effet juridique externe.</span></footer>
+  <noscript>JavaScript est nécessaire pour chiffrer et vérifier les opérations sur cet appareil.</noscript>
+</body>
+</html>

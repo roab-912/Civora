@@ -12,6 +12,7 @@ import { randomUUID } from "node:crypto";
 import { canonical, domain, signDigest } from "../dist/web/src/protocol.js";
 import { actors, ceremony, tally } from "./pwa-guardians.TEST_ONLY.mjs";
 import { NotificationService } from "../dist/services/notifications/service.js";
+import { NetworkService } from "./network-service.mjs";
 import {
   validatePushKeys,
   endpointURL,
@@ -23,7 +24,8 @@ const args = process.argv.slice(2),
   },
   port = Number(get("--port", "8790"));
 const root = resolve("."),
-  dir = resolve(".tools/pwa/sessions/" + randomUUID());
+  session = randomUUID(),
+  dir = resolve(".tools/pwa/sessions/" + session);
 mkdirSync(dir, { recursive: true });
 const env = {
     ...process.env,
@@ -39,7 +41,7 @@ process.on("exit", () => {
   for (const p of children) if (p.exitCode === null) p.kill("SIGKILL");
 });
 const binaries = {};
-for (const name of ["civpwadev", "civnode"]) {
+for (const name of ["civpwadev"]) {
   const path = join(dir, name + ".exe"),
     r = spawnSync(
       go,
@@ -82,24 +84,17 @@ async function launch(exe, argv, pattern, name) {
 }
 const live = await launch(
   binaries.civpwadev,
-  ["--home", join(dir, "ledger"), "--listen", "127.0.0.1:0"],
-  /PUBLIC_TEST_ONLY_PWA_API (http:\/\/127\.0\.0\.1:\d+)/,
-  "ledger",
-);
-const archive = await launch(
-  binaries.civnode,
   [
-    "serve",
     "--home",
-    join(dir, "historical"),
-    "--fixture",
-    "spec/fixtures/v0.6/archive.json",
+    join(dir, "ledger"),
+    "--session-id",
+    session.replaceAll("-", ""),
     "--listen",
     "127.0.0.1:0",
   ],
-  /Citizen archive API: (127\.0\.0\.1:\d+)/,
-  "archive",
-).then((v) => "http://" + v);
+  /PUBLIC_TEST_ONLY_PWA_API (http:\/\/127\.0\.0\.1:\d+)/,
+  "ledger",
+);
 async function api(path, body) {
   const r = await fetch(live + path, {
     method: body ? "POST" : "GET",
@@ -206,23 +201,19 @@ async function advance(id) {
   }
   return { advanced: true };
 }
-const historical = JSON.parse(
-    readFileSync("spec/fixtures/v0.6/network.json", "utf8"),
-  ),
-  choices = [
-    {
-      name: "Atelier civique",
-      manifest,
-      api_roots: ["/api/atelier"],
-      development_clock: true,
-    },
-    {
-      name: "Archive certifiée v0.6",
-      manifest: historical,
-      api_roots: ["/api/archive"],
-      development_clock: false,
-    },
-  ];
+const choices = [
+  {
+    name: "Atelier civique",
+    manifest,
+    api_roots: ["/api/atelier"],
+    development_clock: true,
+  },
+];
+const networkService = new NetworkService({
+  choice: choices[0],
+  api: live,
+  directory: join(dir, "participation"),
+});
 const notificationMessages = [],
   testNotifications = args.includes("--notifications-test-only"),
   notifications = new NotificationService({
@@ -232,9 +223,9 @@ const notificationMessages = [],
       process.env.CIVORA_PUSH_CONTACT ??
         "mailto:civora-development@example.invalid",
     ),
-    watches: choices.map((c, i) => ({
+    watches: choices.map((c) => ({
       ...c,
-      api_roots: [i === 0 ? live : archive],
+      api_roots: [live],
     })),
     ...(testNotifications
       ? {
@@ -293,6 +284,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await notifications.handle(req, res, path)) return;
+    if (await networkService.handle(req, res, u)) return;
     if (
       testNotifications &&
       path === "/__dev/notifications" &&
@@ -310,6 +302,7 @@ const server = createServer(async (req, res) => {
           notifications: { api_root: "/notifications" },
           networks: choices,
           development: true,
+          participation: true,
         }),
       );
       return;
@@ -326,7 +319,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (path.startsWith("/api/")) {
-      const m = /^\/api\/(atelier|archive)(\/v1\/.*)$/.exec(path);
+      const m = /^\/api\/(atelier)(\/v1\/.*)$/.exec(path);
       if (!m || !["GET", "POST", "HEAD"].includes(req.method)) {
         res.writeHead(404);
         res.end();
@@ -338,7 +331,7 @@ const server = createServer(async (req, res) => {
         if (body.reduce((s, b) => s + b.length, 0) > 262144)
           throw Error("capacity");
       }
-      const base = m[1] === "atelier" ? live : archive,
+      const base = live,
         raw = Buffer.concat(body),
         forward = async () => {
           const response = await fetch(base + m[2] + u.search, {

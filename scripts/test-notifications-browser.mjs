@@ -117,7 +117,7 @@ try {
   assert(!metadata.includes("account_id"));
   await page.goto(origin + "/#/account");
   await expect(page.locator("body")).not.toHaveAttribute("aria-busy", "true");
-  await expect(page.getByLabel("Choisir le réseau")).toBeEnabled();
+  await expect(page.locator("body")).not.toHaveAttribute("aria-busy", "true");
   await page
     .getByRole("button", { name: "Créer un compte", exact: true })
     .click();
@@ -151,8 +151,13 @@ try {
       .getByRole("button", { name: "Confirmer le dépôt public" })
       .click();
     await page
+      .getByRole("link", { name: "Ouvrir les commandes de l’atelier" })
+      .click();
+    await page
       .getByRole("button", { name: "Atelier : ouvrir le vote" })
       .click();
+    await expect(page.locator("body")).not.toHaveAttribute("aria-busy", "true");
+    await page.getByRole("link", { name: "Retour au dossier" }).click();
     await expect(
       page.getByRole("button", { name: "Participer au vote" }),
     ).toBeVisible();

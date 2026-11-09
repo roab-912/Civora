@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://civora.invalid/network/observer-1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "network_id",
+    "genesis",
+    "genesis_sha256",
+    "api_url",
+    "presence_url",
+    "ca_pem",
+    "public_test_only"
+  ],
+  "properties": {
+    "format": { "const": "civora-observer-1" },
+    "network_id": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "genesis": { "type": "string", "pattern": "^[A-Za-z0-9_-]+$" },
+    "genesis_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "api_url": { "type": "string", "pattern": "^https?://[^/]+/[^?#]*[^/?#]$" },
+    "presence_url": {
+      "type": "string",
+      "pattern": "^https?://[^/]+/network/presence$"
+    },
+    "ca_pem": { "type": "string" },
+    "public_test_only": { "const": true }
+  }
+}

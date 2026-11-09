@@ -4,6 +4,7 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
 import { resolve, dirname, join, extname } from "node:path";
 import { NotificationService } from "../dist/services/notifications/service.js";
+import { NetworkService } from "./network-service.mjs";
 const args = process.argv.slice(2),
   get = (n, d = "") => {
     const i = args.indexOf(n);
@@ -12,7 +13,7 @@ const args = process.argv.slice(2),
   file = resolve(get("--config", "pwa-networks.json")),
   config = JSON.parse(readFileSync(file, "utf8")),
   routes = new Map();
-const networks = config.networks.map((entry, i) => {
+const networks = config.networks.slice(0, 1).map((entry, i) => {
   const manifest =
       typeof entry.manifest === "string"
         ? JSON.parse(
@@ -41,6 +42,17 @@ const networks = config.networks.map((entry, i) => {
     }),
   };
 });
+const networkService =
+  config.development === true &&
+  networks[0]?.manifest.voting_profile === "inline_dev"
+    ? new NetworkService({
+        choice: networks[0],
+        api: routes.get("n0s0"),
+        directory: resolve(
+          config.participation_directory ?? ".tools/network/host",
+        ),
+      })
+    : null;
 const notifications = new NotificationService({
   directory: resolve(
     config.notifications?.directory ?? ".dev-host/pwa-notifications",
@@ -101,6 +113,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (await notifications.handle(req, res, url.pathname)) return;
+    if (networkService && (await networkService.handle(req, res, url))) return;
     if (
       developmentUpstream &&
       url.pathname === "/__dev/advance" &&
@@ -135,6 +148,7 @@ const server = createServer(async (req, res) => {
           version: "0.8.0",
           networks,
           development: config.development === true,
+          participation: networkService !== null,
           notifications: { api_root: "/notifications" },
         }),
       );

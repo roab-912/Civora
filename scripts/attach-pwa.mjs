@@ -37,12 +37,13 @@ writeFileSync(
     {
       development: true,
       development_upstream: upstream.origin,
-      networks: config.networks.map((n) => ({
+      networks: config.networks.slice(0, 1).map((n) => ({
         ...n,
         api_roots: n.api_roots.map((root) =>
           new URL(root, upstream).href.replace(/\/$/, ""),
         ),
       })),
+      participation_directory: join(directory, "participation"),
       notifications: {
         directory: join(directory, "notifications"),
         ...(get("--contact") ? { contact: get("--contact") } : {}),

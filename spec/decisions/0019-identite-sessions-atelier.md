@@ -1,0 +1,11 @@
+# 0019 — Identité des sessions d’atelier et version affichée
+
+Le lanceur interactif `civpwadev` créait des registres neufs avec un identifiant réseau constant. Après une utilisation antérieure, la hauteur mémorisée par le navigateur dépassait celle du nouveau registre : le refus `ERR_ROLLBACK` était justifié. Réinitialiser cette hauteur aurait masqué une régression du même réseau.
+
+Chaque nouvel atelier possède désormais son propre identifiant : `codec.Hash("development/pwa/session", ["PUBLIC_TEST_ONLY", session])`, où `session` contient 16 octets en hexadécimal minuscule. Le lanceur fournit le UUID de son répertoire, sans tirets. L’exécutable génère un nonce aléatoire si aucun `--session-id` n’est fourni ; un nonce explicite permet de reproduire l’identité dans les tests. Il ne faut pas réutiliser un nonce pour recréer un registre remis à zéro. Le chain ID et les identifiants des comptes de test sont dérivés de ce nouvel identifiant selon les règles existantes. Le nonce est public et n’est pas une clé.
+
+Les schémas, domaines de signature et fixtures historiques ne changent pas. L’archive v0.6 conserve son réseau. Les preuves, comptes, sauvegardes, hauteurs, notifications et caches restent séparés par réseau. Un compte d’un ancien atelier ne devient pas un compte du nouvel atelier. Aucune donnée du navigateur n’est effacée et la protection contre le retour en arrière du même réseau reste obligatoire, y compris en développement.
+
+La barre d’interface affiche la version de distribution issue de `package.json` et le statut expérimental. Le format de configuration PWA reste `0.8.0` et le protocole garde ses propres versions : le changement de libellé n’autorise aucune activation. Les archives 1.0.0 déjà produites et leurs reçus décrivent les sources antérieures à cette correction ; elles ne sont pas régénérées implicitement.
+
+`npm run test:pwa:sessions` lance deux ateliers réels et conserve le stockage du même navigateur : l’ancien plancher de hauteur ne bloque pas un nouveau réseau, reste intact, et bloque toujours une régression du même réseau. Les coffres, caches et bulletins en attente ne sont pas supprimés. Le test vérifie également le libellé de version et la conservation du message de sécurité lorsque l’activation du mode hors ligne échoue. Il fait partie du contrôle global, sauf `-SkipPWA`.

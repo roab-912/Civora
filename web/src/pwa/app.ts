@@ -47,6 +47,11 @@ import { checkProof, trustAt } from "./network.js";
 import { verifyHeader } from "../consensus.js";
 import { blob, uint } from "./protocol.js";
 import {
+  inspectExplorerBlock,
+  explorerHeight,
+  type ExplorerBlock,
+} from "./explorer.js";
+import {
   verifyArchiveCertificate,
   verifyWitness,
   type Frozen,
@@ -54,8 +59,7 @@ import {
 installValidators(schemas);
 const root = document.querySelector<HTMLElement>("#app")!,
   notice = document.querySelector<HTMLElement>("#notice")!,
-  connection = document.querySelector<HTMLElement>("#connection")!,
-  networkSelect = document.querySelector<HTMLSelectElement>("#network")!;
+  connection = document.querySelector<HTMLElement>("#connection")!;
 let client: Client,
   account: LocalAccount | null = null,
   choices: NetworkChoice[] = [],
@@ -65,6 +69,8 @@ let client: Client,
   generation = 0,
   activeWorker: Worker | null = null;
 let notificationRoot: string | null = null;
+let participationAvailable = false;
+let networkPoll: ReturnType<typeof setInterval> | null = null;
 let workerReject: ((error: Error) => void) | null = null;
 function cancelWorker() {
   activeWorker?.terminate();
@@ -151,6 +157,12 @@ function flash(text: string, error = false) {
 }
 function errorMessage(e: unknown) {
   const message = e instanceof Error ? e.message : "ERR_UNAVAILABLE";
+  if (message.includes("ERR_EXPLORER_HEIGHT"))
+    return "Indiquez une hauteur entière positive disponible dans ce registre.";
+  if (message.includes("ERR_EXPLORER_KEY"))
+    return "L’identifiant public doit contenir 64 caractères hexadécimaux.";
+  if (message.includes("ERR_ROLLBACK"))
+    return "Connexion bloquée : ce registre annonce une hauteur inférieure à celle déjà vérifiée sur cet appareil (ERR_ROLLBACK). Vérifiez que le serveur utilise le bon registre. Vos données locales sont conservées.";
   if (message.includes("SECURE_CONTEXT"))
     return "La création de compte et le vote nécessitent HTTPS avec un certificat approuvé sur cet appareil. Ouvrez l’adresse HTTPS du serveur ; l’accès HTTP par adresse IP permet seulement la consultation.";
   if (message.includes("NETWORK") || message.includes("CONTEXT"))
@@ -180,7 +192,6 @@ function errorMessage(e: unknown) {
 async function task(fn: () => Promise<void>) {
   if (busy) return;
   busy = true;
-  networkSelect.disabled = true;
   document.body.setAttribute("aria-busy", "true");
   try {
     await fn();
@@ -198,16 +209,19 @@ function button(text: string, fn: () => Promise<void>, kind = "primary") {
   return b;
 }
 function updateConnection() {
-  networkSelect.disabled = busy || routing > 0;
   if (!client) return;
+  const technical =
+    location.hash.startsWith("#/network") || location.hash === "#/verify";
   connection.textContent =
     !navigator.onLine || client.offline
       ? "Hors ligne · données en cache"
       : client.versionOK
-        ? "Source vérifiée · " +
-          (client.stale ? "archive historique · " : "") +
-          "hauteur " +
-          client.height
+        ? technical
+          ? "Source vérifiée · " +
+            (client.stale ? "archive historique · " : "") +
+            "hauteur " +
+            client.height
+          : "Connecté"
         : "Version non prise en charge";
   connection.dataset.state =
     client.offline || !navigator.onLine
@@ -249,7 +263,7 @@ function cachedNote() {
       ? "Vue en cache · dernière connexion : " +
           date(String(client.lastRead)) +
           ". Aucune action ne sera envoyée hors ligne."
-      : "Listes servies par l’indexeur. Les fiches et actions vérifient leurs preuves d’état. Réseau de développement, sans effet juridique externe.",
+      : "Expérimentation locale, sans effet juridique externe.",
   );
 }
 function title(p: Row) {
@@ -314,7 +328,7 @@ async function home() {
     ),
     el(
       "section",
-      { class: "stats", "aria-label": "Vue du réseau" },
+      { class: "stats", "aria-label": "Vue des décisions" },
       ...[
         [String(open.length), "Votes ouverts"],
         [String(upcoming.length), "À venir"],
@@ -364,7 +378,7 @@ async function home() {
         {},
         "Les textes et les actes publics sont consultables. Votre bulletin est chiffré sur cet appareil et son admissibilité est prouvée sans joindre votre compte.",
       ),
-      link("Comprendre les vérifications", "/verify"),
+      link("Vérifier un reçu de vote", "/network/receipt"),
     ),
     cachedNote(),
   );
@@ -526,23 +540,9 @@ async function detail(id: string, byPoll = false) {
     ["scheduled", "open", "adopted"].includes(p.state)
   )
     controls.append(
-      button(
-        p.state === "scheduled"
-          ? "Atelier : ouvrir le vote"
-          : p.state === "open"
-            ? "Atelier : clore et dépouiller"
-            : "Atelier : appliquer la décision",
-        async () => {
-          const r = await fetch("/__dev/advance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: canonical({ id: proposalID }),
-          });
-          if (!r.ok) throw Error("ERR_DEVELOPMENT");
-          await client.refresh();
-          await detail(proposalID);
-        },
-        "development",
+      link(
+        "Ouvrir les commandes de l’atelier",
+        "/network/workshop?proposal=" + proposalID,
       ),
     );
   renderPage(
@@ -1080,7 +1080,7 @@ async function accountPage() {
       el(
         "p",
         {},
-        "Aucun email, numéro ni portefeuille externe. Votre compte est propre au réseau sélectionné.",
+        "Aucun email, numéro ni portefeuille externe. Votre compte est propre au réseau actuel.",
       ),
       button("Créer un compte", async () => {
         requireWebCrypto();
@@ -1745,11 +1745,11 @@ async function notificationControls(): Promise<HTMLElement> {
   const box = el(
       "section",
       { class: "card form" },
-      el("h2", {}, "Notifications et réseaux suivis"),
+      el("h2", {}, "Notifications"),
     ),
     state = await notificationSettings(),
     capability = pushCapability(),
-    group = el("fieldset", {}, el("legend", {}, "Réseaux à suivre"));
+    group = el("fieldset", {}, el("legend", {}, "Alertes des scrutins"));
   box.append(
     el(
       "p",
@@ -1766,7 +1766,9 @@ async function notificationControls(): Promise<HTMLElement> {
     input.checked = state
       ? state.networks.includes(choice.manifest.network_id)
       : choice.manifest.network_id === client.network;
-    group.append(el("label", { class: "check" }, input, choice.name));
+    group.append(
+      el("label", { class: "check" }, input, "Suivre l’ouverture des votes"),
+    );
   }
   const selected = () =>
     [...group.querySelectorAll<HTMLInputElement>("input:checked")].map(
@@ -1796,7 +1798,8 @@ async function notificationControls(): Promise<HTMLElement> {
       box.append(
         button("Activer les notifications", async () => {
           const networks = selected();
-          if (!networks.length) throw Error("Choisissez au moins un réseau.");
+          if (!networks.length)
+            throw Error("Activez les alertes des scrutins.");
           await enablePush(notificationRoot!, networks);
           flash(
             "Notifications activées. Aucun identifiant de compte n’est transmis au service.",
@@ -1807,7 +1810,7 @@ async function notificationControls(): Promise<HTMLElement> {
     if (state?.enabled)
       box.append(
         button(
-          "Enregistrer les réseaux suivis",
+          "Enregistrer mes préférences",
           async () => {
             await updatePreferences(selected());
             flash("Préférences enregistrées.");
@@ -1968,7 +1971,7 @@ async function verification() {
       el(
         "p",
         {},
-        "Le reçu sera comparé aux preuves du réseau choisi. Aucun bulletin ne sera envoyé.",
+        "Le reçu sera comparé aux preuves du réseau actuel. Aucun bulletin ne sera envoyé.",
       ),
       el("button", { type: "submit", class: "secondary" }, "Vérifier ce reçu"),
     );
@@ -2018,13 +2021,572 @@ async function verification() {
   renderPage(
     viewGeneration,
     header(
-      "Contrôler par vous-même",
-      "La confiance se vérifie.",
-      "Les preuves d’état sont authentifiées par des en-têtes CometBFT signés. Le résultat peut être recalculé sur votre appareil.",
+      "Votre vote",
+      "Vérifier un reçu de vote.",
+      "Importez le reçu téléchargé après votre vote pour contrôler son inclusion dans le registre. La vérification s’effectue sur cet appareil.",
+    ),
+    form,
+    el(
+      "p",
+      { class: "source-note" },
+      "Pour consulter les blocs et les preuves d’état du registre, ouvrez l’explorateur.",
+    ),
+    link("Ouvrir l’explorateur", "/network/explorer"),
+  );
+}
+function explorerTabs(state = false) {
+  const tabs = el(
+    "nav",
+    { class: "explorer-tabs", "aria-label": "Contenu de l’explorateur" },
+    link("Blocs", "/network/explorer"),
+    link("États du registre", "/network/explorer/state"),
+  );
+  [...tabs.children].forEach((child, i) =>
+    child.setAttribute("aria-current", (i === 1) === state ? "page" : "false"),
+  );
+  return tabs;
+}
+
+async function explorerBlocksPage(query: URLSearchParams) {
+  const viewGeneration = generation,
+    latest = String(uint(client.height) + 1n);
+  const getBlock = async (height: string) => {
+    let inspected: ExplorerBlock | undefined;
+    await client.get("/v1/blocks/" + height, true, (value) => {
+      inspected = inspectExplorerBlock(client.genesis!, value, height);
+    });
+    return inspected!;
+  };
+  const heightInput = el("input", {
+    id: "explorer-block-height",
+    type: "text",
+    inputmode: "numeric",
+    pattern: "[1-9][0-9]*",
+    required: "",
+    maxlength: "20",
+    placeholder: "Ex. 12",
+  });
+  const search = el(
+    "form",
+    { class: "explorer-search" },
+    el(
+      "label",
+      { for: "explorer-block-height" },
+      "Numéro du bloc",
+      heightInput,
+    ),
+    el("button", { type: "submit", class: "secondary" }, "Consulter le bloc"),
+  );
+  search.onsubmit = (event) => {
+    event.preventDefault();
+    void task(async () => {
+      const h = explorerHeight(heightInput.value.trim(), latest);
+      location.hash = "/network/explorer?height=" + h;
+    });
+  };
+  const note = el(
+    "p",
+    { class: "source-note" },
+    "Les en-têtes signés et les octets des transactions affichées sont vérifiés sur cet appareil. L’explorateur ne rejoue pas l’exécution complète du registre ; l’observateur effectue ce contrôle. Cet atelier utilise des commits synthétiques TEST_ONLY.",
+  );
+  const requested = query.get("height");
+  if (requested) {
+    const height = explorerHeight(requested, latest),
+      block = await getBlock(height),
+      h = block.header;
+    heightInput.value = height;
+    renderPage(
+      viewGeneration,
+      header(
+        "Explorateur · blocs",
+        "Bloc " + height,
+        "Consultez l’en-tête, les empreintes et les transactions publiques de ce bloc.",
+      ),
+      explorerTabs(),
+      search,
+      el(
+        "p",
+        { class: "verified", "data-block-verified": height },
+        "✓ En-tête signé et données des transactions vérifiés",
+      ),
+      el(
+        "section",
+        { class: "card" },
+        el(
+          "dl",
+          { class: "facts" },
+          ...[
+            ["Hauteur", height],
+            ["Date du bloc", h.time],
+            ["Empreinte du bloc", block.hash],
+            ["Bloc précédent", h.last_block_id.hash || "Genèse"],
+            ["Racine des transactions", h.data_hash],
+            ["Racine d’état avant ce bloc", h.app_hash || "État initial"],
+            ["Transactions", String(block.transactions.length)],
+            ["Signatures du commit", String(block.signatures) + " / 7"],
+          ].flatMap(([name, value]) => [
+            el("dt", {}, name!),
+            el("dd", { class: "identifier" }, value!),
+          ]),
+        ),
+      ),
+      el(
+        "p",
+        { class: "source-note" },
+        "La racine d’état de l’en-tête du bloc H correspond à l’état après le bloc H−1. Consultez l’onglet États du registre pour obtenir une preuve d’état ancrée au bloc suivant.",
+      ),
+      el(
+        "section",
+        {},
+        el("h2", {}, "Transactions publiques"),
+        ...block.transactions
+          .slice(0, 20)
+          .map((tx, i) =>
+            el(
+              "article",
+              { class: "card" },
+              el("h3", {}, "Transaction " + (i + 1)),
+              el("p", {}, tx.type),
+              el(
+                "p",
+                { class: "identifier" },
+                "SHA-256 des octets : " + tx.sha256,
+              ),
+              el(
+                "details",
+                {},
+                el("summary", {}, "Voir les données publiques"),
+                el("pre", {}, JSON.stringify(tx.value, null, 2)),
+              ),
+            ),
+          ),
+        !block.transactions.length
+          ? el(
+              "p",
+              { class: "empty" },
+              "Ce bloc ne contient aucune transaction.",
+            )
+          : null,
+        block.transactions.length > 20
+          ? el(
+              "p",
+              { class: "source-note" },
+              "Les 20 premières transactions sont affichées. L’empreinte a été contrôlée sur toutes les transactions du bloc.",
+            )
+          : null,
+      ),
+      el(
+        "div",
+        { class: "actions" },
+        uint(height) > 1n
+          ? link(
+              "Bloc précédent",
+              "/network/explorer?height=" + (uint(height) - 1n),
+            )
+          : null,
+        uint(height) < uint(latest)
+          ? link(
+              "Bloc suivant",
+              "/network/explorer?height=" + (uint(height) + 1n),
+            )
+          : null,
+        link("Blocs récents", "/network/explorer"),
+      ),
+      note,
+    );
+    return;
+  }
+  const before = query.get("before"),
+    top = before ? uint(explorerHeight(before, latest)) : uint(latest);
+  const heights: string[] = [];
+  for (let h = top; h > 0n && heights.length < 10; h--) heights.push(String(h));
+  const blocks = await Promise.all(heights.map(getBlock));
+  for (let i = 0; i + 1 < blocks.length; i++)
+    if (
+      blocks[i]!.header.last_block_id.hash.toLowerCase() !== blocks[i + 1]!.hash
+    )
+      throw Error("ERR_PROOF_BLOCK_LINK");
+  renderPage(
+    viewGeneration,
+    header(
+      "Explorateur",
+      "Les blocs du registre.",
+      "Parcourez les blocs récents ou recherchez un bloc par son numéro. Les états publics sont accessibles dans l’onglet voisin.",
+    ),
+    explorerTabs(),
+    search,
+    el(
+      "div",
+      { class: "explorer-blocks" },
+      ...blocks.map((block) =>
+        el(
+          "article",
+          { class: "card explorer-block" },
+          el(
+            "h2",
+            {},
+            link(
+              "Bloc " + block.header.height,
+              "/network/explorer?height=" + block.header.height,
+            ),
+          ),
+          el("p", {}, date(String(Date.parse(block.header.time)))),
+          el("p", {}, block.transactions.length + " transaction(s)"),
+          el("p", { class: "identifier" }, block.hash),
+          el(
+            "span",
+            { class: "verified" },
+            "✓ En-tête et transactions vérifiés",
+          ),
+        ),
+      ),
+    ),
+    el(
+      "div",
+      { class: "actions" },
+      uint(heights.at(-1)!) > 1n
+        ? link(
+            "Blocs plus anciens",
+            "/network/explorer?before=" + (uint(heights.at(-1)!) - 1n),
+          )
+        : null,
+      before ? link("Derniers blocs", "/network/explorer") : null,
+    ),
+    note,
+    cachedNote(),
+  );
+}
+
+async function explorerStatePage(query: URLSearchParams) {
+  const viewGeneration = generation;
+  const kinds = [
+    ["network", "Configuration du réseau"],
+    ["accounts", "Compte"],
+    ["proposals", "Proposition"],
+    ["polls", "Scrutin"],
+    ["law", "Loi"],
+    ["role", "Rôle"],
+  ];
+  const kind = el(
+    "select",
+    { id: "explorer-state-kind" },
+    ...kinds.map(([value, name]) => el("option", { value: value! }, name!)),
+  );
+  kind.value = kinds.some(([value]) => value === query.get("type"))
+    ? query.get("type")!
+    : "network";
+  const key = el("input", {
+    id: "explorer-state-key",
+    type: "text",
+    maxlength: "64",
+    placeholder: "Identifiant public en hexadécimal",
+  });
+  key.value = query.get("id") ?? "";
+  const height = el("input", {
+    id: "explorer-state-height",
+    type: "text",
+    inputmode: "numeric",
+    pattern: "[1-9][0-9]*",
+    maxlength: "20",
+    required: "",
+  });
+  height.value = explorerHeight(
+    query.get("height") ?? client.height,
+    client.height,
+  );
+  const result = el("section", {
+    class: "card",
+    "aria-label": "Résultat de la preuve d’état",
+  });
+  const updateKind = () => {
+    key.disabled = kind.value === "network";
+    key.required = !key.disabled;
+    if (key.disabled) key.value = "config";
+    else if (key.value === "config") key.value = "";
+  };
+  updateKind();
+  kind.onchange = () => {
+    updateKind();
+    result.replaceChildren(
+      el("p", {}, "Consultez l’état pour vérifier votre nouvelle sélection."),
+    );
+  };
+  const inspect = async () => {
+    result.replaceChildren(el("p", {}, "Vérification de la preuve en cours…"));
+    const selectedHeight = explorerHeight(height.value.trim(), client.height),
+      selectedKind = kind.value;
+    const id = key.value.trim().toLowerCase();
+    if (selectedKind !== "network" && !/^[0-9a-f]{64}$/.test(id))
+      throw Error("ERR_EXPLORER_KEY");
+    const table = ["law", "role"].includes(selectedKind)
+      ? "objects"
+      : selectedKind;
+    const stateKey =
+      table === "objects"
+        ? [selectedKind, id]
+        : selectedKind === "network"
+          ? "config"
+          : id;
+    const proof = await client.proof(table, stateKey, selectedHeight);
+    if (generation !== viewGeneration) return;
+    result.replaceChildren(
+      el("h2", {}, proof.path.exists ? "État vérifié" : "Absence vérifiée"),
+      el(
+        "p",
+        { class: "verified", "data-state-proof-height": selectedHeight },
+        "✓ Preuve d’état contrôlée sur cet appareil",
+      ),
+      el(
+        "dl",
+        { class: "facts" },
+        ...[
+          ["Table", table],
+          ["Clé", JSON.stringify(stateKey)],
+          ["État après le bloc", selectedHeight],
+          ["Ancré par l’en-tête du bloc", String(uint(selectedHeight) + 1n)],
+        ].flatMap(([name, value]) => [
+          el("dt", {}, name!),
+          el("dd", { class: "identifier" }, value!),
+        ]),
+      ),
+      proof.path.exists
+        ? el(
+            "details",
+            {},
+            el("summary", {}, "Voir la valeur publique"),
+            el("pre", {}, JSON.stringify(proof.path.entry.value, null, 2)),
+          )
+        : el(
+            "p",
+            {},
+            "Cette clé est absente du registre à la hauteur choisie.",
+          ),
+      button(
+        "Télécharger la preuve d’état",
+        async () => {
+          download("civora-preuve-etat-" + selectedHeight + ".json", {
+            network_id: client.network,
+            genesis_sha256: client.choice.manifest.main.genesis.sha256,
+            proof,
+          });
+        },
+        "secondary",
+      ),
+    );
+  };
+  const form = el(
+    "form",
+    { class: "card form" },
+    el("label", { for: "explorer-state-kind" }, "Type d’état", kind),
+    el("label", { for: "explorer-state-key" }, "Identifiant public", key),
+    el("label", { for: "explorer-state-height" }, "Hauteur de l’état", height),
+    el(
+      "p",
+      { class: "source-note" },
+      "La hauteur correspond à l’état après ce bloc. Collez un identifiant public de compte, proposition, scrutin, loi ou rôle pour consulter sa valeur ou vérifier son absence.",
+    ),
+    el("button", { type: "submit", class: "secondary" }, "Consulter l’état"),
+  );
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    void task(inspect);
+  };
+  renderPage(
+    viewGeneration,
+    header(
+      "Explorateur · états",
+      "L’état du registre, avec sa preuve.",
+      "Consultez une valeur publique à une hauteur donnée. Chaque résultat vérifie son contexte et sa preuve cryptographique, y compris pour une clé absente.",
+    ),
+    explorerTabs(true),
+    form,
+    result,
+    el(
+      "p",
+      { class: "source-note" },
+      "Une preuve de l’état après le bloc H est authentifiée par l’en-tête signé du bloc H+1. Les coffres, sauvegardes et choix de vote de cet appareil ne sont pas consultés par cet explorateur.",
+    ),
+  );
+  await inspect();
+}
+
+async function workshopPage(proposalID: string | null) {
+  if (!development || !client.choice.development_clock)
+    throw Error("ERR_PROFILE");
+  const proposals = (await list("proposals")).items.filter(
+    (p) =>
+      ["scheduled", "open", "adopted"].includes(p.state) &&
+      (!proposalID || p.id === proposalID),
+  );
+  renderPage(
+    generation,
+    header(
+      "Atelier local",
+      "Commandes de démonstration.",
+      "Ces commandes font avancer l’horloge de développement pour ouvrir, clore et appliquer les scrutins. Elles sont propres à cet atelier expérimental.",
+    ),
+    ...proposals.map((p) =>
+      el(
+        "article",
+        { class: "card" },
+        el("h2", {}, title(p)),
+        pill(p.state),
+        el(
+          "div",
+          { class: "actions" },
+          button(
+            p.state === "scheduled"
+              ? "Atelier : ouvrir le vote"
+              : p.state === "open"
+                ? "Atelier : clore et dépouiller"
+                : "Atelier : appliquer la décision",
+            async () => {
+              const response = await fetch("/__dev/advance", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: canonical({ id: p.id }),
+              });
+              if (!response.ok) throw Error("ERR_DEVELOPMENT");
+              await route();
+            },
+            "development",
+          ),
+          link("Retour au dossier", "/proposals/" + p.id),
+        ),
+      ),
+    ),
+    !proposals.length
+      ? el(
+          "p",
+          { class: "empty" },
+          "Aucun scrutin n’attend une commande de l’atelier.",
+        )
+      : null,
+    proposalID && !proposals.length
+      ? link("Retour au dossier", "/proposals/" + proposalID)
+      : null,
+  );
+}
+
+async function networkPage() {
+  const viewGeneration = generation;
+  const counts = ["active_nodes", "observer_nodes", "citizen_accounts"];
+  const stats = counts.map((key) =>
+    el("strong", { "data-network-stat": key }, "—"),
+  );
+  const observed = el(
+    "p",
+    { class: "source-note", role: "status" },
+    "Chargement de l’activité…",
+  );
+  const refresh = async () => {
+    if (!participationAvailable) {
+      observed.textContent =
+        "Le suivi des nœuds n’est pas activé sur cet hôte.";
+      return;
+    }
+    try {
+      const response = await fetch("/network/overview", {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!response.ok) throw Error("ERR_NETWORK_OVERVIEW");
+      const data = await response.json();
+      if (
+        data.format !== "civora-network-overview-1" ||
+        data.network_id !== client.network ||
+        counts.some((key) => !/^(0|[1-9][0-9]*)$/.test(data[key]))
+      )
+        throw Error("ERR_NETWORK_OVERVIEW");
+      if (generation !== viewGeneration) return;
+      stats.forEach((node, i) => {
+        node.textContent = data[counts[i]!];
+      });
+      observed.textContent =
+        "Mis à jour à " +
+        new Date(Number(data.observed_at)).toLocaleTimeString("fr-FR") +
+        ". Un serveur d’atelier et les observateurs annoncés depuis moins de 45 secondes. " +
+        data.test_accounts +
+        " comptes de démonstration exclus du nombre de comptes citoyens. Actualisation toutes les 15 secondes.";
+    } catch {
+      if (generation !== viewGeneration) return;
+      stats.forEach((node) => {
+        node.textContent = "—";
+      });
+      observed.textContent =
+        "L’activité est momentanément indisponible. Aucun nombre de participants ne peut être confirmé.";
+    }
+  };
+  renderPage(
+    viewGeneration,
+    header(
+      "Le réseau",
+      "Un registre partagé, des ordinateurs qui le vérifient.",
+      "Retrouvez ici l’activité du réseau actuel, les téléchargements et les informations techniques. Aucun compte n’est nécessaire pour faire tourner un nœud observateur.",
+    ),
+    el(
+      "section",
+      { class: "stats", "aria-label": "Participation au réseau" },
+      ...["Nœuds actifs", "Dont observateurs", "Comptes citoyens actifs"].map(
+        (label, i) => el("div", {}, stats[i]!, el("span", {}, label)),
+      ),
+    ),
+    observed,
+    el(
+      "p",
+      { class: "network-health" },
+      "Les présences sont déclarées par les nœuds et vérifiées par le serveur de l’atelier. Elles ne mesurent ni des personnes distinctes, ni l’indépendance des machines.",
+    ),
+    el(
+      "div",
+      { class: "actions" },
+      link("Ouvrir l’explorateur", "/network/explorer"),
+      button("Actualiser l’activité", refresh, "secondary"),
+    ),
+    el(
+      "section",
+      {
+        class: "network-paths",
+        "aria-label": "Choisir son rôle dans le réseau",
+      },
+      el(
+        "article",
+        { class: "card" },
+        el("span", { class: "pill positive" }, "Disponible · observateur"),
+        el("h2", {}, "Vérifier le réseau"),
+        el(
+          "p",
+          {},
+          "Conservez une copie du registre et vérifiez les blocs sur votre ordinateur. Ce rôle consulte et contrôle le réseau ; il ne vote pas au consensus.",
+        ),
+        el(
+          "div",
+          { class: "actions" },
+          link("Installer un observateur", "/network/observer"),
+        ),
+      ),
+      el(
+        "article",
+        { class: "card" },
+        el("span", { class: "pill" }, "Maquette · à venir"),
+        el("h2", {}, "Participer au consensus"),
+        el(
+          "p",
+          {},
+          "Découvrez le futur parcours pour contribuer à la validation collective des blocs. Cet aperçu présente une fonctionnalité qui reste à développer.",
+        ),
+        el(
+          "div",
+          { class: "actions" },
+          link("Voir la maquette du consensus", "/network/consensus"),
+        ),
+      ),
     ),
     el(
       "section",
       { class: "card" },
+      el("h2", {}, "Le réseau actuel"),
       el(
         "dl",
         { class: "facts" },
@@ -2033,36 +2595,316 @@ async function verification() {
           ["Identifiant", client.network],
           ["Genèse SHA-256", client.choice.manifest.main.genesis.sha256],
           ["Hauteur vérifiée", client.height],
-          ["Dernier temps authentifié", date(client.time)],
           ["Version de protocole", client.config.registry.protocol_epoch],
           [
-            "État de sécurité",
-            "Développement · non qualifié pour un pilote public",
+            "Fonctionnement",
+            "Atelier local expérimental · transport HTTP pour les observateurs",
           ],
-        ].flatMap(([k, v]) => [
-          el("dt", {}, k!),
-          el("dd", { class: "identifier" }, v!),
+          [
+            "Consensus de l’atelier",
+            "Commits synthétiques avec clés publiques TEST_ONLY",
+          ],
+        ].flatMap(([name, value]) => [
+          el("dt", {}, name!),
+          el("dd", { class: "identifier" }, value!),
         ]),
       ),
+    ),
+    el(
+      "section",
+      { class: "card" },
+      el("h2", {}, "Quel rôle pour mon ordinateur ?"),
+      el(
+        "p",
+        {},
+        "Un nœud observateur télécharge les blocs, vérifie les signatures et rejoue les décisions depuis la genèse. Il conserve une copie locale du registre et reprend après un arrêt. Le droit de valider des blocs ne s’obtient pas en téléchargeant l’archive.",
+      ),
+      link("Explorer les blocs et les états", "/network/explorer"),
+    ),
+  );
+  await refresh();
+  if (generation === viewGeneration)
+    networkPoll = setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 15000);
+}
+
+async function listenNetworkPage() {
+  const command = (value: string) =>
+    el(
+      "div",
+      { class: "command" },
+      el("pre", {}, el("code", {}, value)),
       button(
-        "Actualiser et vérifier la version",
+        "Copier la commande",
         async () => {
-          await client.refresh();
-          await verification();
+          await navigator.clipboard.writeText(value);
+          flash(
+            "Commande copiée. Ouvrez un terminal dans le dossier extrait et collez-la.",
+          );
         },
         "secondary",
       ),
+    );
+  const platforms = [
+    ["Windows 64 bits", "windows-amd64", ".\\civora-reseau.exe"],
+    [
+      "Linux 64 bits",
+      "linux-amd64",
+      "chmod +x civora-reseau && ./civora-reseau",
+    ],
+  ];
+  renderPage(
+    generation,
+    header(
+      "Vérifier le réseau",
+      "Un téléchargement. Une commande.",
+      "Installez un nœud observateur : votre ordinateur conserve et vérifie une copie du registre actuel. Ce rôle ne participe pas au consensus. Aucun compte civique, aucune installation de Go ou Node.js et aucun port entrant à ouvrir.",
     ),
-    form,
+    !participationAvailable
+      ? el(
+          "p",
+          { class: "notice" },
+          "Les archives de participation ne sont pas proposées par cet hôte.",
+        )
+      : el(
+          "ol",
+          { class: "join-steps" },
+          el(
+            "li",
+            {},
+            el("h2", {}, "Télécharger l’archive de votre ordinateur"),
+            el(
+              "div",
+              { class: "network-downloads" },
+              ...platforms.map(([name, target, cmd]) =>
+                el(
+                  "article",
+                  { class: "card" },
+                  el("h3", {}, name!),
+                  el("p", {}, "Archive autonome, configurée pour ce réseau."),
+                  el(
+                    "a",
+                    {
+                      href: "/network/download/" + target + ".zip",
+                      class: "primary",
+                      download: "",
+                    },
+                    "Télécharger pour " + name,
+                  ),
+                  command(cmd!),
+                  el(
+                    "a",
+                    {
+                      href: "/network/download/" + target + ".sha256",
+                      target: "_blank",
+                      rel: "noopener",
+                    },
+                    "Voir l’empreinte SHA-256",
+                  ),
+                ),
+              ),
+            ),
+          ),
+          el(
+            "li",
+            {},
+            el("h2", {}, "Extraire, puis lancer la commande"),
+            el(
+              "p",
+              {},
+              "Extrayez toute l’archive dans un dossier. Ouvrez un terminal dans ce dossier et lancez la commande indiquée pour votre système. Le programme affiche la hauteur du registre vérifié et annonce sa présence au réseau.",
+            ),
+          ),
+          el(
+            "li",
+            {},
+            el("h2", {}, "Laisser le terminal ouvert"),
+            el(
+              "p",
+              {},
+              "Le compteur du réseau se met à jour automatiquement. Pour arrêter : Ctrl+C. Pour reprendre : relancez la même commande, dans le même dossier. Conservez le dossier donnees ; il contient votre archive et votre identité locale de nœud.",
+            ),
+          ),
+        ),
+    el(
+      "section",
+      { class: "card" },
+      el("h2", {}, "Depuis un autre ordinateur du même Wi-Fi"),
+      el(
+        "p",
+        {},
+        "Ouvrez cette page depuis l’adresse HTTPS Wi-Fi du serveur, puis téléchargez l’archive sur cet ordinateur. Une archive téléchargée depuis 127.0.0.1 se connecte uniquement à cette adresse locale.",
+      ),
+      el(
+        "p",
+        {},
+        "Le certificat public de l’atelier est inclus si nécessaire et reste propre au programme ; aucune autorité n’est installée automatiquement sur votre système. Ne désactivez pas la vérification TLS.",
+      ),
+    ),
+    el(
+      "details",
+      {},
+      el("summary", {}, "Confiance, données et limites de cet atelier"),
+      el(
+        "p",
+        {},
+        "Cet atelier est expérimental et utilise des clés de consensus publiques de test. Les observateurs vérifient ses blocs mais ne constituent pas un quorum de validateurs indépendant. Les présences expirent après 45 secondes sans nouvelles et ne représentent pas un nombre de personnes.",
+      ),
+      el(
+        "p",
+        {},
+        "Comparez l’empreinte de la genèse et celle de l’archive avec l’organisateur par un canal de confiance. Les empreintes fournies sur la même page ne remplacent pas cette vérification.",
+      ),
+      el(
+        "p",
+        {},
+        "La clé de présence est créée uniquement au premier lancement. Ne partagez pas le dossier donnees. L’archive téléchargée ne contient ni clé privée de compte, ni clé privée du serveur. Si un nouvel atelier remplace ce réseau, téléchargez une nouvelle archive et utilisez un autre dossier ; les données de l’ancien réseau restent conservées.",
+      ),
+      el(
+        "pre",
+        {},
+        "Genèse SHA-256 : " + client.choice.manifest.main.genesis.sha256,
+      ),
+    ),
+    link("Voir l’activité du réseau", "/network"),
+  );
+}
+
+function consensusNetworkMockup() {
+  renderPage(
+    generation,
+    header(
+      "Maquette · fonctionnalité à venir",
+      "Participer au consensus.",
+      "Aperçu du futur parcours pour rejoindre le réseau comme validateur et contribuer à la validation collective des blocs.",
+    ),
+    el(
+      "section",
+      { class: "network-mock-notice", role: "note" },
+      el("strong", {}, "Cette page est une maquette."),
+      el(
+        "p",
+        {},
+        "La participation au consensus n’est pas développée pour cet atelier. Aucun téléchargement de validateur, aucune inscription et aucune activation ne sont disponibles ici.",
+      ),
+    ),
+    el(
+      "section",
+      { class: "card" },
+      el("h2", {}, "Un rôle de validation collective"),
+      el(
+        "p",
+        {},
+        "Un validateur contribuerait au consensus en proposant des blocs ou en votant sur leur validité. Les conditions d’admission et le parcours d’activation restent à définir.",
+      ),
+      el(
+        "p",
+        { class: "muted" },
+        "L’observateur disponible aujourd’hui vérifie sa copie locale du registre et n’exerce pas ce rôle.",
+      ),
+    ),
+    el(
+      "section",
+      { "aria-label": "Aperçu du futur parcours" },
+      el("h2", {}, "Le parcours envisagé"),
+      el(
+        "p",
+        { class: "muted" },
+        "Étapes indicatives, à préciser lors du développement.",
+      ),
+      el(
+        "ol",
+        { class: "join-steps" },
+        el(
+          "li",
+          {},
+          el("h3", {}, "Comprendre les conditions du réseau"),
+          el(
+            "p",
+            {},
+            "Consulter les responsabilités du rôle et les conditions de participation.",
+          ),
+        ),
+        el(
+          "li",
+          {},
+          el("h3", {}, "Préparer son ordinateur"),
+          el(
+            "p",
+            {},
+            "Vérifier les prérequis et préparer la configuration du nœud validateur.",
+          ),
+        ),
+        el(
+          "li",
+          {},
+          el("h3", {}, "Suivre l’admission et l’activation"),
+          el(
+            "p",
+            {},
+            "Suivre le parcours qui permettra de participer au consensus une fois le nœud admis.",
+          ),
+        ),
+      ),
+    ),
+    el(
+      "div",
+      { class: "actions" },
+      el(
+        "button",
+        {
+          type: "button",
+          class: "primary",
+          disabled: "",
+          "aria-describedby": "consensus-unavailable",
+        },
+        "Participation au consensus indisponible",
+      ),
+    ),
     el(
       "p",
-      { class: "source-note" },
-      "Le premier point de confiance est la genèse configurée. Comparer son empreinte par plusieurs canaux reste nécessaire. Les commits de l’atelier sont synthétiques et utilisent des clés publiques de test.",
+      { id: "consensus-unavailable", class: "source-note" },
+      "Aucune action n’est activée dans cette maquette.",
+    ),
+    el(
+      "section",
+      { class: "card" },
+      el("h2", {}, "Vous souhaitez utiliser le réseau dès maintenant ?"),
+      el(
+        "p",
+        {},
+        "Le mode observateur est disponible : téléchargez son archive pour lire, écouter et vérifier le registre.",
+      ),
+      link("Vérifier le réseau", "/network/observer"),
     ),
   );
 }
+
+function updateNavigation() {
+  const technical =
+    location.hash.startsWith("#/network") || location.hash === "#/verify";
+  document.body.dataset.space = technical ? "network" : "application";
+  document.querySelector<HTMLElement>("#application-nav")!.hidden = technical;
+  document.querySelector<HTMLElement>("#network-nav")!.hidden = !technical;
+  document.querySelector<HTMLElement>(".account-link")!.hidden = technical;
+  document.querySelector<HTMLElement>("#workshop-link")!.hidden = !development;
+  for (const a of document.querySelectorAll<HTMLAnchorElement>(
+    ".space-switch a",
+  ))
+    a.setAttribute(
+      "aria-current",
+      (a.dataset.space === "network") === technical ? "page" : "false",
+    );
+}
+
 async function route() {
   if (!client) return;
+  if (networkPoll) {
+    clearInterval(networkPoll);
+    networkPoll = null;
+  }
+  updateNavigation();
   routing++;
   updateConnection();
   const current = ++generation;
@@ -2075,16 +2917,13 @@ async function route() {
   try {
     const requested = query.get("network");
     if (requested && requested !== client.network) {
-      const index = choices.findIndex(
-        (c) => c.manifest.network_id === requested,
-      );
-      if (index < 0) throw Error("ERR_NETWORK");
-      networkSelect.value = String(index);
-      await switchNetwork(index);
-      return;
+      throw Error("ERR_NETWORK");
     }
     await client.refresh();
-    account = await loadAccount(client.network);
+    account =
+      parts[0] === "network" && parts[1] === "explorer"
+        ? null
+        : await loadAccount(client.network);
     if (current !== generation) return;
     if (!parts.length) await home();
     else if (parts[0] === "account") await accountPage();
@@ -2095,13 +2934,40 @@ async function route() {
       await newProposal(parts[1]!, query.get("target") ?? undefined);
     else if (parts[0] === "laws" || parts[0] === "roles")
       await objects(parts[0], parts[1]);
-    else if (parts[0] === "verify") await verification();
+    else if (parts[0] === "network") {
+      if (["observer", "listen", "join"].includes(parts[1] ?? ""))
+        await listenNetworkPage();
+      else if (parts[1] === "explorer") {
+        if (parts[2] === "state") await explorerStatePage(query);
+        else await explorerBlocksPage(query);
+      } else if (parts[1] === "consensus") consensusNetworkMockup();
+      else if (parts[1] === "receipt" || parts[1] === "verify")
+        await verification();
+      else if (parts[1] === "workshop")
+        await workshopPage(query.get("proposal"));
+      else await networkPage();
+    } else if (parts[0] === "verify") await verification();
     else if (parts[0] === "news") await newsPage();
     else location.hash = "/";
-    for (const a of document.querySelectorAll<HTMLAnchorElement>("nav a"))
+    const networkTab = ["observer", "listen", "join"].includes(parts[1] ?? "")
+      ? "#/network/observer"
+      : parts[0] === "verify" || ["receipt", "verify"].includes(parts[1] ?? "")
+        ? "#/network/receipt"
+        : parts[1] === "explorer"
+          ? "#/network/explorer"
+          : "#/" + parts.join("/");
+    for (const a of document.querySelectorAll<HTMLAnchorElement>(
+      "#application-nav a, #network-nav a",
+    ))
       a.setAttribute(
         "aria-current",
-        a.hash.split("/")[1] === (parts[0] ?? "") ? "page" : "false",
+        parts[0] === "network" || parts[0] === "verify"
+          ? a.hash === networkTab
+            ? "page"
+            : "false"
+          : a.hash.split("/")[1] === (parts[0] ?? "")
+            ? "page"
+            : "false",
       );
   } catch (e) {
     if (current !== generation) return;
@@ -2133,7 +2999,6 @@ async function switchNetwork(index: number) {
       "Les actions restent bloquées pendant la vérification de la source.",
     ),
   );
-  await write("settings", "network", String(index));
   try {
     await client.initialize();
     notice.hidden = true;
@@ -2166,19 +3031,14 @@ async function start() {
       !config.networks.length
     )
       throw Error("ERR_VERSION");
-    choices = config.networks;
+    choices = config.networks.slice(0, 1);
+    participationAvailable = config.participation === true;
     notificationRoot =
       config.notifications?.api_root === "/notifications"
         ? "/notifications"
         : null;
     development = !!config.development;
-    for (const [index, c] of choices.entries())
-      networkSelect.append(el("option", { value: String(index) }, c.name));
-    networkSelect.onchange = () =>
-      void task(() => switchNetwork(Number(networkSelect.value)));
-    const old = Number((await read<string>("settings", "network")) ?? "0");
-    networkSelect.value = String(old < choices.length ? old : 0);
-    await switchNetwork(Number(networkSelect.value));
+    await switchNetwork(0);
     initializing = false;
     if (navigationPending) await route();
     document.addEventListener("click", (event) => {
@@ -2211,14 +3071,15 @@ async function start() {
     if ("serviceWorker" in navigator) {
       try {
         const registration = await navigator.serviceWorker.register("/sw.js");
-        if (registration.waiting)
+        if (registration.waiting && !notice.classList.contains("error"))
           flash(
             "Une nouvelle version est disponible. Terminez votre opération puis rechargez la page.",
           );
       } catch {
-        flash(
-          "Le mode hors ligne n’a pas pu être activé. Les fonctions en ligne restent accessibles.",
-        );
+        if (!notice.classList.contains("error"))
+          flash(
+            "Le mode hors ligne n’a pas pu être activé. Les fonctions en ligne restent accessibles.",
+          );
       }
     }
   } catch (e) {

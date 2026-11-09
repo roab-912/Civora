@@ -73,7 +73,6 @@ for (const input of Object.keys(result.metafile.inputs))
   if (input.includes("node:") || input.includes("web/src/protocol.ts"))
     throw Error("Node reference code leaked into browser bundle: " + input);
 for (const file of [
-  "index.html",
   "app.css",
   "manifest.webmanifest",
   "icon.svg",
@@ -81,6 +80,16 @@ for (const file of [
   "icon-512.png",
 ])
   copyFileSync(join("web/pwa", file), join(directory, file));
+const releaseVersion = JSON.parse(readFileSync("package.json", "utf8")).version;
+if (!/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/.test(releaseVersion))
+  throw Error("Invalid release version");
+writeFileSync(
+  join(directory, "index.html"),
+  readFileSync("web/pwa/index.html", "utf8").replaceAll(
+    "__CIVORA_RELEASE_VERSION__",
+    releaseVersion,
+  ),
+);
 const assets = {};
 for (const name of readdirSync(directory).sort()) {
   if (name === "build.json") continue;

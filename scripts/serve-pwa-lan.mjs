@@ -202,7 +202,11 @@ const secure = httpsServer(
       res.end();
       return;
     }
-    const headers = { ...req.headers, host: upstream.host };
+    const headers = {
+      ...req.headers,
+      host: upstream.host,
+      "x-civora-origin": origin,
+    };
     if (req.headers.origin) headers.origin = upstream.origin;
     const forward = request(
       {

@@ -2,7 +2,7 @@
 // guardian keys and synthetic native commits are explicit development fixtures.
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { resolve, join } from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { domain } from "../dist/web/src/protocol.js";
 import { testPartitionWorker } from "./test-pwa-partition.mjs";
@@ -17,6 +17,7 @@ const expect = baseExpect.configure({ timeout: 25000 });
 const directory = resolve(".tools/qualification/pwa-" + Date.now());
 mkdirSync(directory, { recursive: true });
 let server,
+  historicalServer,
   frontendHost,
   origin = process.env.CIVORA_PWA_URL;
 if (!origin) {
@@ -87,7 +88,10 @@ async function capture(page, name) {
 }
 async function navigate(page, path) {
   await page.goto(origin + "/#" + path);
-  await expect(page.locator("#connection")).toContainText("Source vérifiée");
+  await expect(page.locator("#connection")).toHaveAttribute(
+    "data-state",
+    "verified",
+  );
   await wait(page);
 }
 async function submit(page, action, options = {}) {
@@ -129,13 +133,19 @@ async function submit(page, action, options = {}) {
   await page.getByRole("button", { name: "Relire avant de déposer" }).click();
   await page.getByRole("button", { name: "Confirmer le dépôt public" }).click();
   await expect(
-    page.getByRole("button", { name: "Atelier : ouvrir le vote" }),
+    page.getByRole("link", { name: "Ouvrir les commandes de l’atelier" }),
   ).toBeVisible({ timeout: 45000 });
   const id = new URL(page.url()).hash.split("/").at(-1);
   return id;
 }
 async function decide(page, id, { vote = true, voter = page } = {}) {
-  await page.getByRole("button", { name: "Atelier : ouvrir le vote" }).click();
+  const advance = async (label) => {
+    await navigate(page, "/network/workshop?proposal=" + id);
+    await page.getByRole("button", { name: label }).click();
+    await wait(page);
+    await navigate(page, "/proposals/" + id);
+  };
+  await advance("Atelier : ouvrir le vote");
   await expect(
     page.getByRole("button", { name: "Participer au vote" }),
   ).toBeVisible();
@@ -159,9 +169,7 @@ async function decide(page, id, { vote = true, voter = page } = {}) {
     }
     await voter.getByRole("link", { name: "Retour au scrutin" }).click();
   }
-  await page
-    .getByRole("button", { name: "Atelier : clore et dépouiller" })
-    .click();
+  await advance("Atelier : clore et dépouiller");
   await expect(
     page.getByRole("button", { name: "Vérifier le résultat" }),
   ).toBeVisible({ timeout: 40000 });
@@ -170,9 +178,7 @@ async function decide(page, id, { vote = true, voter = page } = {}) {
     page.getByRole("heading", { name: "Le résultat est vérifié." }),
   ).toBeVisible({ timeout: 60000 });
   await page.getByRole("link", { name: "Retour au dossier" }).click();
-  await page
-    .getByRole("button", { name: "Atelier : appliquer la décision" })
-    .click();
+  await advance("Atelier : appliquer la décision");
   await expect(page.locator(".meta-line")).toContainText(
     "Appliquée au registre",
   );
@@ -501,45 +507,131 @@ try {
   report.checks.push(
     "offline-shell-public-cache-explicit-label-and-no-background-post",
   );
-  await navigate(phone, "/account");
-  await phone.getByLabel("Choisir le réseau").selectOption("1");
-  await expect(phone.locator("#connection")).toContainText("Source vérifiée");
-  await phone.getByLabel("Fichier de sauvegarde chiffrée").setInputFiles({
-    name: "backup.json",
-    mimeType: "application/json",
-    buffer: Buffer.from(backup),
+  // The historical v0.6 fixture remains a protocol regression test, isolated
+  // from the one network offered by the actual application.
+  const fixtureDirectory = join(directory, "historical-fixture");
+  mkdirSync(fixtureDirectory);
+  const fixtureBinary = join(fixtureDirectory, "civnode.exe");
+  const go = process.env.CIVORA_GO ?? resolve(".tools/go/bin/go.exe");
+  const built = spawnSync(
+    go,
+    ["build", "-buildvcs=false", "-o", fixtureBinary, "./cmd/civnode"],
+    {
+      encoding: "utf8",
+      windowsHide: true,
+      env: {
+        ...process.env,
+        GOPATH: resolve(".tools/gopath"),
+        GOMODCACHE: resolve(".tools/gomodcache"),
+        GOCACHE: resolve(".tools/gocache"),
+      },
+    },
+  );
+  assert.equal(built.status, 0, built.stderr);
+  historicalServer = spawn(
+    fixtureBinary,
+    [
+      "serve",
+      "--home",
+      join(fixtureDirectory, "data"),
+      "--fixture",
+      "spec/fixtures/v0.6/archive.json",
+      "--listen",
+      "127.0.0.1:0",
+    ],
+    { windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
+  );
+  const historicalOrigin = await new Promise((yes, no) => {
+    let log = "";
+    const timer = setTimeout(
+      () => no(Error("Historical fixture startup: " + log)),
+      60000,
+    );
+    const append = (chunk) => {
+      log += chunk;
+      const match = /Citizen archive API: (127\.0\.0\.1:\d+)/.exec(log);
+      if (match) {
+        clearTimeout(timer);
+        yes("http://" + match[1]);
+      }
+    };
+    historicalServer.stdout.on("data", append);
+    historicalServer.stderr.on("data", append);
+    historicalServer.once("exit", () => {
+      clearTimeout(timer);
+      no(Error(log));
+    });
   });
-  await phone
+  const fixtureChoice = {
+    name: "Historical fixture TEST_ONLY",
+    manifest: JSON.parse(
+      readFileSync("spec/fixtures/v0.6/network.json", "utf8"),
+    ),
+    api_roots: ["/api/fixture"],
+    development_clock: false,
+  };
+  const historicalContext = await browser.newContext({
+    serviceWorkers: "block",
+  });
+  await historicalContext.route(origin + "/pwa-config.json", (route) =>
+    route.fulfill({
+      json: { ...settings, participation: false, networks: [fixtureChoice] },
+    }),
+  );
+  await historicalContext.route(origin + "/api/fixture/**", async (route) => {
+    const url = new URL(route.request().url());
+    await route.fulfill({
+      response: await route.fetch({
+        url:
+          historicalOrigin +
+          url.pathname.slice("/api/fixture".length) +
+          url.search,
+      }),
+    });
+  });
+  const historicalPage = await historicalContext.newPage();
+  await navigate(historicalPage, "/account");
+  await historicalPage
+    .getByLabel("Fichier de sauvegarde chiffrée")
+    .setInputFiles({
+      name: "backup.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(backup),
+    });
+  await historicalPage
     .getByLabel("Code de secours (64 caractères hexadécimaux)")
     .fill(code);
-  await phone
+  await historicalPage
     .getByRole("button", { name: "Importer et vérifier le compte" })
     .click();
-  await expect(phone.locator("#notice")).toContainText("autre réseau");
+  await expect(historicalPage.locator("#notice")).toContainText("autre réseau");
   report.checks.push("foreign-network-backup-refused-and-vaults-isolated");
   const archived = await (
-    await fetch(origin + "/api/archive/v1/proposals?limit=100")
+    await fetch(historicalOrigin + "/v1/proposals?limit=100")
   ).json();
   await navigate(
-    phone,
+    historicalPage,
     "/proposals/" + archived.items.find((p) => p.poll_id).id,
   );
-  await phone.getByRole("button", { name: "Vérifier le résultat" }).click();
+  await historicalPage
+    .getByRole("button", { name: "Vérifier le résultat" })
+    .click();
   await expect(
-    phone.getByRole("heading", { name: "Le résultat est vérifié." }),
+    historicalPage.getByRole("heading", { name: "Le résultat est vérifié." }),
   ).toBeVisible({ timeout: 90000 });
-  await capture(phone, "mobile-certified-partitioned-result");
+  await capture(historicalPage, "isolated-certified-partitioned-result");
   report.checks.push(
-    "mobile-full-selective-partitioned-record-independent-replay-and-certification",
+    "isolated-fixture-full-selective-partitioned-record-independent-replay-and-certification",
   );
   report.checks.push(
     ...(await testPartitionWorker(
       page,
-      origin,
-      settings.networks[1],
+      historicalOrigin,
+      { ...fixtureChoice, api_roots: [""] },
       archived.items.find((p) => p.poll_id).poll_id,
     )),
   );
+  await historicalContext.close();
   await navigate(page, "/account");
   await page.getByLabel("Opération", { exact: true }).selectOption("rotate");
   await page.getByLabel("Fichier de sauvegarde chiffrée").setInputFiles({
@@ -634,6 +726,11 @@ try {
   if (frontendHost && frontendHost.exitCode === null) {
     const done = new Promise((y) => frontendHost.once("exit", y));
     frontendHost.kill();
+    await done;
+  }
+  if (historicalServer && historicalServer.exitCode === null) {
+    const done = new Promise((y) => historicalServer.once("exit", y));
+    historicalServer.kill();
     await done;
   }
   if (server && server.exitCode === null) {

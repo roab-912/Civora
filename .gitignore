@@ -6,3 +6,4 @@ dist/
 .dev-host/
 coverage/
 *.test.exe
+Civora-WiFi.exe
